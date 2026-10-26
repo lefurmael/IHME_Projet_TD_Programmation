@@ -1,7 +1,7 @@
 # Planificateur de séances de natation
 
-Petit outil en Python qui propose une séance de natation adaptée à ton niveau
-et à ce que tu veux travailler (endurance, vitesse, technique).
+Petit outil en Python qui propose des séances de natation selon le niveau,
+l'objectif, la durée et la nage souhaitée, puis permet de suivre les entraînements.
 
 ## Fonctionnalités
 
@@ -9,8 +9,9 @@ et à ce que tu veux travailler (endurance, vitesse, technique).
 - Trois objectifs : endurance, vitesse, technique
 - Durée au choix : 30, 45 ou 60 minutes
 - Nage au choix : crawl, dos, brasse ou séance mixte
-- Séance en trois parties : échauffement, deux séries principales, retour au calme
-- Volume adapté au niveau et à la durée, exercices tirés au hasard selon les critères
+- Séances composées d'un échauffement, de deux séries principales et d'un retour au calme
+- Journal local des séances, bilans, difficultés ressenties et notes personnelles
+- Ajustement modéré du volume selon les bilans comparables récents
 
 ## Prérequis
 
@@ -32,44 +33,45 @@ source .venv/bin/activate
 python3 generator.py
 ```
 
-Le programme demande ton niveau, ton objectif, la durée et la nage, puis affiche
-une séance composée de plusieurs séries.
+Le menu permet de générer une séance, d'enregistrer un bilan après
+l'entraînement, de consulter l'historique ou de quitter. Une séance générée est
+conservée comme « à faire » pour que tu puisses renseigner ton ressenti plus tard.
 
-Exemple :
+Pour enregistrer un bilan, indique si la séance a été faite, sa difficulté
+ressentie (`tres_facile`, `facile`, `adaptee`, `difficile` ou `trop_difficile`)
+et une note facultative.
 
+Le journal est enregistré dans `data/suivi.json` et reste sur ton ordinateur.
+Ce fichier est ignoré par Git pour ne pas publier tes données personnelles.
+
+Pour lancer les tests automatisés :
+
+```bash
+python3 -m unittest discover -s tests
 ```
-Ton niveau (debutant / intermediaire / avance) : intermediaire
-Ton objectif (endurance / vitesse / technique) : endurance
-Durée en minutes (30 / 45 / 60) : 45
-Ta nage (crawl / dos / brasse / mixte) : crawl
 
-Niveau : intermediaire | Objectif : endurance | Durée : 45 min | Nage : crawl
-Échauffement : 360 m nage libre souple
-Séries principales :
-- 3 x 200 m progressif, accélération sur les derniers mètres, 25 s de repos
-- 3 x 200 m allure souple, 20 s de repos
-Retour au calme : 180 m dos ou nage libre souple
-Total : 1740 m
-```
+## Adaptation du volume
+
+L'adaptation ne concerne que les séances entièrement réalisées avec le même
+niveau, objectif et nage. Une séance ressentie « difficile » réduit le volume
+suivant de 10 %, une séance « trop difficile » de 15 %. Après au moins deux
+séances faciles parmi les trois dernières et sans ressenti difficile, le volume
+augmente de 5 %. Dans les autres cas, le volume reste standard. Le programme
+affiche la raison de l'adaptation.
 
 ## Structure du projet
 
 ```
 .
-├── generator.py   # génération des séances
+├── generator.py
+├── tracker.py
 ├── data/
-│   └── exercices.json  # échauffements, récupérations et séries
+│   └── exercices.json
+├── tests/
+│   └── test_tracker.py
 ├── .gitignore
 └── README.md
 ```
-
-## Pistes d'amélioration
-
-- Choix du matériel disponible
-- Interface web (Streamlit)
-- Calculateur d'allures
-- Séries stockées dans un fichier JSON
-- Tests automatisés
 
 ## Avertissement
 
