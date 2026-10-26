@@ -7,8 +7,10 @@ et à ce que tu veux travailler (endurance, vitesse, technique).
 
 - Trois niveaux : débutant, intermédiaire, avancé
 - Trois objectifs : endurance, vitesse, technique
-- Séance en trois parties : échauffement, série principale, retour au calme
-- Volume total adapté au niveau, série principale tirée au hasard
+- Durée au choix : 30, 45 ou 60 minutes
+- Nage au choix : crawl, dos, brasse ou séance mixte
+- Séance en trois parties : échauffement, deux séries principales, retour au calme
+- Volume adapté au niveau et à la durée, exercices tirés au hasard selon les critères
 
 ## Prérequis
 
@@ -30,17 +32,22 @@ source .venv/bin/activate
 python3 generator.py
 ```
 
-Le programme demande ton niveau puis ton objectif, et affiche la séance.
+Le programme demande ton niveau, ton objectif, la durée et la nage, puis affiche
+une séance composée de plusieurs séries.
 
 Exemple :
 
 ```
 Ton niveau (debutant / intermediaire / avance) : intermediaire
 Ton objectif (endurance / vitesse / technique) : endurance
+Durée en minutes (30 / 45 / 60) : 45
+Ta nage (crawl / dos / brasse / mixte) : crawl
 
-Niveau : intermediaire | Objectif : endurance
+Niveau : intermediaire | Objectif : endurance | Durée : 45 min | Nage : crawl
 Échauffement : 360 m nage libre souple
-Série principale : 3 x 400 m régulier, 30 s de repos
+Séries principales :
+- 3 x 200 m progressif, accélération sur les derniers mètres, 25 s de repos
+- 3 x 200 m allure souple, 20 s de repos
 Retour au calme : 180 m dos ou nage libre souple
 Total : 1740 m
 ```
@@ -50,13 +57,15 @@ Total : 1740 m
 ```
 .
 ├── generator.py   # génération des séances
+├── data/
+│   └── exercices.json  # échauffements, récupérations et séries
 ├── .gitignore
 └── README.md
 ```
 
 ## Pistes d'amélioration
 
-- Choix de la durée de la séance et de la nage
+- Choix du matériel disponible
 - Interface web (Streamlit)
 - Calculateur d'allures
 - Séries stockées dans un fichier JSON
