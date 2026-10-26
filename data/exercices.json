@@ -1,0 +1,24 @@
+{
+  "echauffements": [
+    "nage libre souple",
+    "alternance 50 m crawl / 50 m dos",
+    "nage libre souple avec 4 accélérations de 15 m"
+  ],
+  "retours_au_calme": [
+    "dos ou nage libre souple",
+    "nage libre très souple, respiration ample"
+  ],
+  "series": [
+    {"objectif": "endurance", "niveaux": ["debutant"], "distance": 100, "description": "allure souple", "repos": 20},
+    {"objectif": "endurance", "niveaux": ["debutant", "intermediaire"], "distance": 200, "description": "allure souple", "repos": 20},
+    {"objectif": "endurance", "niveaux": ["intermediaire", "avance"], "distance": 400, "description": "allure régulière", "repos": 30},
+    {"objectif": "endurance", "niveaux": ["avance"], "distance": 500, "description": "allure soutenue et régulière", "repos": 30},
+
+    {"objectif": "vitesse", "niveaux": ["debutant", "intermediaire", "avance"], "distance": 25, "description": "sprint", "repos": 45},
+    {"objectif": "vitesse", "niveaux": ["intermediaire", "avance"], "distance": 50, "description": "rapide", "repos": 30},
+    {"objectif": "vitesse", "niveaux": ["avance"], "distance": 100, "description": "vif", "repos": 40},
+
+    {"objectif": "technique", "niveaux": ["debutant", "intermediaire", "avance"], "distance": 50, "description": "éducatifs (rattrapé, poings fermés)", "repos": 20},
+    {"objectif": "technique", "niveaux": ["debutant", "intermediaire", "avance"], "distance": 100, "description": "respiration 3 temps", "repos": 15}
+  ]
+}

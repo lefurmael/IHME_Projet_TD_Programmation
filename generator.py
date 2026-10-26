@@ -1,40 +1,72 @@
+import json
 import random
+from pathlib import Path
+
+DATA_FILE = Path(__file__).parent / "data" / "exercices.json"
 
 # Volume total visé (en mètres) selon le niveau
 VOLUMES = {"debutant": 1000, "intermediaire": 1800, "avance": 2800}
 
-# Séries principales par objectif : (texte, distance d'une répétition)
-MAIN_SETS = {
-    "endurance": [
-        ("{reps} x {dist} m allure souple, 20 s de repos", 200),
-        ("{reps} x {dist} m régulier, 30 s de repos", 400),
-    ],
-    "vitesse": [
-        ("{reps} x {dist} m sprint, 45 s de repos", 25),
-        ("{reps} x {dist} m rapide, 30 s de repos", 50),
-    ],
-    "technique": [
-        ("{reps} x {dist} m éducatifs, 20 s de repos", 50),
-        ("{reps} x {dist} m respiration 3 temps, 15 s de repos", 100),
-    ],
-}
+
+def charger_donnees():
+    """Lit la base de séances dans le fichier JSON."""
+    with open(DATA_FILE, encoding="utf-8") as f:
+        return json.load(f)
+
+
+DONNEES = charger_donnees()
+OBJECTIFS = sorted({s["objectif"] for s in DONNEES["series"]})
 
 
 def generate_session(level, goal):
+    """Construit une séance et la renvoie sous forme de dictionnaire."""
     total = VOLUMES[level]
     warmup = int(total * 0.2)
     cooldown = int(total * 0.1)
     main_target = total - warmup - cooldown
 
-    text, dist = random.choice(MAIN_SETS[goal])
-    reps = max(1, main_target // dist)
+    # On ne garde que les séries adaptées à l'objectif et au niveau
+    candidates = [
+        s for s in DONNEES["series"]
+        if s["objectif"] == goal and level in s["niveaux"]
+    ]
+    serie = random.choice(candidates)
+    reps = max(1, main_target // serie["distance"])
 
-    print(f"Niveau : {level} | Objectif : {goal}")
-    print(f"Échauffement : {warmup} m nage libre souple")
-    print(f"Série principale : {text.format(reps=reps, dist=dist)}")
-    print(f"Retour au calme : {cooldown} m dos ou nage libre souple")
-    print(f"Total : {warmup + reps * dist + cooldown} m")
+    return {
+        "niveau": level,
+        "objectif": goal,
+        "echauffement": f"{warmup} m {random.choice(DONNEES['echauffements'])}",
+        "serie_principale": (
+            f"{reps} x {serie['distance']} m {serie['description']}, "
+            f"{serie['repos']} s de repos"
+        ),
+        "retour_au_calme": f"{cooldown} m {random.choice(DONNEES['retours_au_calme'])}",
+        "total": warmup + reps * serie["distance"] + cooldown,
+    }
 
 
-generate_session("intermediaire", "endurance")
+def afficher_session(session):
+    print(f"Niveau : {session['niveau']} | Objectif : {session['objectif']}")
+    print(f"Échauffement : {session['echauffement']}")
+    print(f"Série principale : {session['serie_principale']}")
+    print(f"Retour au calme : {session['retour_au_calme']}")
+    print(f"Total : {session['total']} m")
 
+
+def demander_choix(question, options):
+    """Pose une question et répète tant que la réponse n'est pas valide."""
+    while True:
+        reponse = input(f"{question} ({' / '.join(options)}) : ").strip().lower()
+        if reponse in options:
+            return reponse
+        print("Choix invalide, réessaie.")
+
+
+if __name__ == "__main__":
+    niveau = demander_choix("Ton niveau", list(VOLUMES))
+    objectif = demander_choix("Ton objectif", OBJECTIFS)
+    print()
+    afficher_session(generate_session(niveau, objectif))
+
+    
