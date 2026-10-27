@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../static/style.css";
 
 const BASE_PATH = import.meta.env.BASE_URL;
