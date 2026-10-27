@@ -27,15 +27,31 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-## Utilisation
+## Lancer l'interface web
 
 ```bash
-python3 generator.py
+docker compose up --build
 ```
 
-Le menu permet de générer une séance, d'enregistrer un bilan après
-l'entraînement, de consulter l'historique ou de quitter. Une séance générée est
-conservée comme « à faire » pour que tu puisses renseigner ton ressenti plus tard.
+Ouvre ensuite <http://localhost:5002>. Le dossier `data/` est monté dans le
+conteneur pour conserver ton journal entre deux lancements. Arrête le serveur
+avec `Ctrl+C`.
+
+Sans Docker, tu peux lancer l'interface localement :
+
+```bash
+pip install -r requirements.txt
+python webapp.py
+```
+
+## Utiliser le générateur en terminal
+
+```bash
+python generator.py
+```
+
+Le menu terminal permet aussi de générer une séance, d'enregistrer un bilan et
+de consulter l'historique. Une séance générée est conservée comme « à faire ».
 
 Pour enregistrer un bilan, indique si la séance a été faite, sa difficulté
 ressentie (`tres_facile`, `facile`, `adaptee`, `difficile` ou `trop_difficile`)
@@ -47,7 +63,7 @@ Ce fichier est ignoré par Git pour ne pas publier tes données personnelles.
 Pour lancer les tests automatisés :
 
 ```bash
-python3 -m unittest discover -s tests
+python -m unittest discover -s tests
 ```
 
 ## Adaptation du volume
@@ -65,10 +81,21 @@ affiche la raison de l'adaptation.
 .
 ├── generator.py
 ├── tracker.py
+├── webapp.py
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   └── history.html
+├── static/
+│   └── style.css
+├── Dockerfile
+├── compose.yaml
+├── requirements.txt
 ├── data/
 │   └── exercices.json
 ├── tests/
-│   └── test_tracker.py
+│   ├── test_tracker.py
+│   └── test_webapp.py
 ├── .gitignore
 └── README.md
 ```

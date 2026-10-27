@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Historique{% endblock %}
+{% block content %}
+  <section class="welcome-row history-heading">
+    <div><p class="eyebrow">TON PARCOURS · CARNET PERSONNEL</p><h1>Chaque longueur compte<span>.</span></h1><p class="lede">Tes séances, tes ressentis, ta progression.</p></div>
+    <a class="primary-button compact-button" href="{{ url_for('dashboard') }}#creer"><span>Nouvelle séance</span><b aria-hidden="true">↗</b></a>
+  </section>
+
+  {% if seances %}
+    <section class="history-list" aria-label="Historique des séances">
+      {% for seance in seances %}
+        <article class="history-entry">
+          <div class="history-date"><strong>{{ dates[seance.id][8:10] }}</strong><span>{{ dates[seance.id][5:7] }}/{{ dates[seance.id][:4] }}</span></div>
+          <div class="history-main">
+            <div class="history-title-row">
+              <div><p class="eyebrow">{{ niveau_labels[seance.niveau] }} · {{ nage_labels[seance.nage] }}</p><h2>{{ objectif_labels[seance.objectif] }} <span>/ {{ seance.duree }} min</span></h2></div>
+              <div class="history-distance">{{ seance.total }} <small>m</small></div>
+            </div>
+            <div class="history-workout">
+              <p><b>Échauffement</b>{{ seance.echauffement }}</p>
+              <p><b>Séries</b>{{ seance.series_principales|join(' · ') }}</p>
+              <p><b>Retour au calme</b>{{ seance.retour_au_calme }}</p>
+            </div>
+            {% if seance.bilan_enregistre %}
+              <div class="saved-feedback">
+                <span class="status-tag {% if seance.effectue == 'oui' %}complete{% else %}pending{% endif %}">{{ effectue_options[seance.effectue] }}</span>
+                <span class="feeling-chip">{{ ressenti_labels[seance.ressenti] }}</span>
+                {% if seance.note %}<p>“{{ seance.note }}”</p>{% endif %}
+              </div>
+            {% else %}
+              <form class="feedback-form" action="{{ url_for('enregistrer_bilan', identifiant=seance.id) }}" method="post">
+                <p class="eyebrow">AJOUTER TON BILAN</p>
+                <div class="feedback-controls">
+                  <label>Réalisation<select name="effectue" required><option value="oui">Terminée</option><option value="partiellement">Partielle</option><option value="non">Non réalisée</option></select></label>
+                  <label>Ressenti<select name="ressenti" required>{% for valeur, label in ressenti_labels.items() %}<option value="{{ valeur }}">{{ label }}</option>{% endfor %}</select></label>
+                  <label class="note-field">Note facultative<input type="text" name="note" maxlength="240" placeholder="Sensations, énergie…"></label>
+                  <button class="small-button" type="submit">Enregistrer le bilan <span>↗</span></button>
+                </div>
+              </form>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="empty-history">
+      <span class="empty-lane" aria-hidden="true">01</span>
+      <p class="eyebrow">PAGE BLANCHE</p>
+      <h2>Ton carnet commence dans l'eau.</h2>
+      <p>Génère une séance; elle apparaîtra ici avec son bilan à compléter.</p>
+      <a class="primary-button compact-button" href="{{ url_for('dashboard') }}#creer"><span>Créer ma première séance</span><b aria-hidden="true">↗</b></a>
+    </section>
+  {% endif %}
+{% endblock %}
