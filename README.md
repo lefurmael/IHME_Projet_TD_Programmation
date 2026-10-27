@@ -57,7 +57,7 @@ GitHub, choisir **Construire et publier l'image**, cliquer **Run workflow** et
 cocher l'option de déploiement.
 
 Dans les paramètres **Settings → Secrets and variables → Actions** du dépôt,
-configurer `IHME_BASE_PATH` (le chemin attribué, ici `/ihme/`),
+configurer `IHME_BASE_PATH` (le chemin attribué, ici `/projet-td-programmation/`),
 `IHME_DEPLOY_URL` et le secret `IHME_DEPLOY_TOKEN` reçus de l'enseignant. Ne
 jamais ajouter le jeton au dépôt ni le partager dans une capture ou un message.
 Le dépôt d'image doit être autorisé par l'enseignant. Voir le
