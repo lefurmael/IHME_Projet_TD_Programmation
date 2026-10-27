@@ -2,7 +2,7 @@
   "echauffements": [
     "nage libre souple",
     "alternance 50 m crawl / 50 m dos",
-    "nage libre souple avec 4 accélérations de 15 m"
+    "nage libre souple avec 4 accélérations progressives sur une longueur"
   ],
   "retours_au_calme": [
     "dos ou nage libre souple",
@@ -17,6 +17,9 @@
     {"objectif": "endurance", "niveaux": ["intermediaire", "avance"], "nages": ["crawl", "brasse"], "distance": 200, "description": "progressif, accélération sur les derniers mètres", "repos": 25},
 
     {"objectif": "vitesse", "niveaux": ["debutant", "intermediaire", "avance"], "nages": ["crawl", "dos", "brasse"], "distance": 25, "description": "sprint", "repos": 45},
+    {"objectif": "vitesse", "niveaux": ["debutant"], "nages": ["crawl", "dos", "brasse"], "distance": 50, "description": "25 m rapide / 25 m souple", "repos": 40},
+    {"objectif": "vitesse", "niveaux": ["debutant"], "nages": ["crawl", "dos", "brasse"], "distance": 50, "description": "nage rapide, geste maîtrisé", "repos": 45},
+    {"objectif": "vitesse", "niveaux": ["debutant"], "nages": ["crawl", "dos", "brasse"], "distance": 50, "description": "nage rapide en gardant une technique propre", "repos": 45},
     {"objectif": "vitesse", "niveaux": ["debutant"], "nages": ["brasse"], "distance": 25, "description": "brasse tonique, geste maîtrisé", "repos": 40},
     {"objectif": "vitesse", "niveaux": ["intermediaire", "avance"], "nages": ["crawl", "dos", "brasse"], "distance": 50, "description": "rapide", "repos": 30},
     {"objectif": "vitesse", "niveaux": ["avance"], "nages": ["crawl", "dos", "brasse"], "distance": 100, "description": "vif", "repos": 40},
@@ -28,6 +31,7 @@
     {"objectif": "technique", "niveaux": ["debutant"], "nages": ["brasse"], "distance": 25, "description": "brasse, coordination bras-jambes", "repos": 20},
     {"objectif": "technique", "niveaux": ["debutant", "intermediaire"], "nages": ["dos"], "distance": 50, "description": "dos, attention à l'alignement", "repos": 20},
     {"objectif": "technique", "niveaux": ["debutant", "intermediaire", "avance"], "nages": ["brasse"], "distance": 50, "description": "brasse, glisse longue", "repos": 20},
+    {"objectif": "technique", "niveaux": ["debutant"], "nages": ["brasse"], "distance": 50, "description": "brasse, coordination bras-jambes", "repos": 20},
     {"objectif": "technique", "niveaux": ["intermediaire", "avance"], "nages": ["crawl", "dos", "brasse"], "distance": 100, "description": "25 m éducatifs / 25 m nage complète", "repos": 20}
   ]
 }

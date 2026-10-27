@@ -68,6 +68,7 @@ h1 span { color: var(--coral); }
 .planner-form legend span { margin-right: 7px; color: var(--coral); font-family: var(--serif); font-size: 15px; }
 .segmented { display: grid; gap: 6px; }
 .three-up { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.two-up { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .segmented label { position: relative; cursor: pointer; }
 .segmented input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .segmented span { min-height: 44px; display: flex; align-items: center; justify-content: center; padding: 9px 12px; color: var(--ink-soft); background: rgba(251, 252, 248, .72); border: 1px solid var(--line); font-size: 12px; font-weight: 600; transition: background .18s ease, border-color .18s ease, color .18s ease; }

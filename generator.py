@@ -10,6 +10,7 @@ DATA_FILE = Path(__file__).parent / "data" / "exercices.json"
 VOLUMES = {"debutant": 1000, "intermediaire": 1800, "avance": 2800}
 DUREES = [30, 45, 60]
 NAGES = ["crawl", "dos", "brasse", "mixte"]
+LONGUEURS_BASSIN = [25, 50]
 
 
 def charger_donnees():
@@ -22,11 +23,13 @@ DONNEES = charger_donnees()
 OBJECTIFS = sorted({s["objectif"] for s in DONNEES["series"]})
 
 
-def generate_session(level, goal, duration=45, nage="mixte", volume_factor=1.0):
+def generate_session(level, goal, duration=45, nage="mixte", volume_factor=1.0, pool_length=25):
     """Construit une séance et la renvoie sous forme de dictionnaire."""
+    if pool_length not in LONGUEURS_BASSIN:
+        raise ValueError("La longueur du bassin doit être de 25 ou 50 m.")
     total = int(VOLUMES[level] * duration / 45 * volume_factor)
-    warmup = int(total * 0.2)
-    cooldown = int(total * 0.1)
+    warmup = max(pool_length, int(total * 0.2 / pool_length) * pool_length)
+    cooldown = max(pool_length, int(total * 0.1 / pool_length) * pool_length)
     main_target = total - warmup - cooldown
 
     # On ne garde que les séries adaptées à l'objectif, au niveau et à la nage.
@@ -35,6 +38,7 @@ def generate_session(level, goal, duration=45, nage="mixte", volume_factor=1.0):
         if s["objectif"] == goal
         and level in s["niveaux"]
         and (nage == "mixte" or nage in s["nages"])
+        and s["distance"] % pool_length == 0
     ]
     if not candidates:
         raise ValueError("Aucune série disponible pour ces critères.")
@@ -57,6 +61,7 @@ def generate_session(level, goal, duration=45, nage="mixte", volume_factor=1.0):
         "objectif": goal,
         "duree": duration,
         "nage": nage,
+        "longueur_bassin": pool_length,
         "adaptation_volume": int(round((volume_factor - 1) * 100)),
         "echauffement": f"{warmup} m {random.choice(DONNEES['echauffements'])}",
         "series_principales": main_sets,
@@ -94,12 +99,22 @@ def generer_seance():
     objectif = demander_choix("Ton objectif", OBJECTIFS)
     duree = int(demander_choix("Durée en minutes", [str(d) for d in DUREES]))
     nage = demander_choix("Ta nage", NAGES)
+    longueur_bassin = int(
+        demander_choix("Longueur du bassin en mètres", [str(d) for d in LONGUEURS_BASSIN])
+    )
 
     ajustement, raison = tracker.calculer_ajustement(
-        tracker.charger_suivi(), niveau, objectif, nage
+        tracker.charger_suivi(), niveau, objectif, nage, longueur_bassin
     )
     print()
-    session = generate_session(niveau, objectif, duree, nage, 1 + ajustement)
+    session = generate_session(
+        niveau,
+        objectif,
+        duree,
+        nage,
+        volume_factor=1 + ajustement,
+        pool_length=longueur_bassin,
+    )
     afficher_session(session)
     enregistrement = tracker.enregistrer_seance(session)
     print(f"Séance ajoutée au suivi (n° {enregistrement['id']}).")

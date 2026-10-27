@@ -3,7 +3,7 @@ import helmet from "helmet";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { calculateVolumeAdjustment, DURATIONS, generateSession, GOALS, LEVELS, STROKES } from "./session.js";
+import { calculateVolumeAdjustment, DURATIONS, generateSession, GOALS, LEVELS, POOL_LENGTHS, STROKES } from "./session.js";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const publicOrigin = process.env.PUBLIC_ORIGIN;
@@ -61,11 +61,13 @@ export function createApp(database) {
 
   app.post("/api/sessions", async (request, response, next) => {
     const { level, goal, duration, stroke } = request.body ?? {};
+    const poolLength = Number(request.body?.poolLength);
     if (
       !Object.hasOwn(LEVELS, level)
       || !GOALS.includes(goal)
       || !DURATIONS.includes(Number(duration))
       || !STROKES.includes(stroke)
+      || !POOL_LENGTHS.includes(poolLength)
     ) {
       return response.status(400).json({ error: "Critères de séance invalides." });
     }
@@ -74,9 +76,9 @@ export function createApp(database) {
       const recent = await database.query(
         `SELECT completed, feeling FROM swim_sessions
          WHERE level = $1 AND goal = $2 AND stroke = $3
-           AND feedback_saved = TRUE AND completed = 'oui'
+           AND pool_length = $4 AND feedback_saved = TRUE AND completed = 'oui'
          ORDER BY created_at DESC, id DESC LIMIT 3`,
-        [level, goal, stroke],
+        [level, goal, stroke, poolLength],
       );
       const adjustment = calculateVolumeAdjustment(recent.rows);
       const session = generateSession({
@@ -84,14 +86,15 @@ export function createApp(database) {
         goal,
         duration: Number(duration),
         stroke,
+        poolLength,
         volumeFactor: adjustment.factor,
       });
       const result = await database.query(
         `INSERT INTO swim_sessions
-          (level, goal, duration, stroke, warmup, main_sets, cooldown, total, volume_adjustment, adjustment_reason)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          (level, goal, duration, stroke, pool_length, warmup, main_sets, cooldown, total, volume_adjustment, adjustment_reason)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
-        [level, goal, Number(duration), stroke, session.warmup, JSON.stringify(session.mainSets), session.cooldown, session.total, session.volumeAdjustment, adjustment.reason],
+        [level, goal, Number(duration), stroke, poolLength, session.warmup, JSON.stringify(session.mainSets), session.cooldown, session.total, session.volumeAdjustment, adjustment.reason],
       );
       response.status(201).json(result.rows[0]);
     } catch (error) {

@@ -89,6 +89,10 @@ def generer():
     objectif = request.form.get("objectif", "")
     nage = request.form.get("nage", "")
     try:
+        pool_length = int(request.form.get("pool_length", "25"))
+    except ValueError:
+        pool_length = 0
+    try:
         duree = int(request.form.get("duree", ""))
     except ValueError:
         duree = 0
@@ -97,15 +101,23 @@ def generer():
         niveau not in generator.VOLUMES
         or objectif not in generator.OBJECTIFS
         or nage not in generator.NAGES
+        or pool_length not in generator.LONGUEURS_BASSIN
         or duree not in generator.DUREES
     ):
         flash("Vérifie les critères de ta séance.", "error")
         return redirect(url_for("dashboard"))
 
     ajustement, raison = tracker.calculer_ajustement(
-        tracker.charger_suivi(), niveau, objectif, nage
+        tracker.charger_suivi(), niveau, objectif, nage, pool_length
     )
-    session = generator.generate_session(niveau, objectif, duree, nage, 1 + ajustement)
+    session = generator.generate_session(
+        niveau,
+        objectif,
+        duree,
+        nage,
+        volume_factor=1 + ajustement,
+        pool_length=pool_length,
+    )
     session["raison_adaptation"] = raison
     enregistrement = tracker.enregistrer_seance(session)
     flash("Ta séance est prête et ajoutée à ton suivi.", "success")

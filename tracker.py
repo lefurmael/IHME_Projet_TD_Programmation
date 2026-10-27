@@ -55,7 +55,7 @@ def enregistrer_bilan(identifiant, effectue, ressenti, note=""):
     raise ValueError(f"Séance introuvable : {identifiant}")
 
 
-def calculer_ajustement(seances, niveau, objectif, nage):
+def calculer_ajustement(seances, niveau, objectif, nage, longueur_bassin=25):
     """Adapte le volume selon les trois derniers bilans comparables."""
     recentes = [
         seance
@@ -63,6 +63,7 @@ def calculer_ajustement(seances, niveau, objectif, nage):
         if seance["niveau"] == niveau
         and seance["objectif"] == objectif
         and seance["nage"] == nage
+        and seance.get("longueur_bassin", 25) == longueur_bassin
         and seance["bilan_enregistre"]
         and seance["effectue"] == "oui"
         and seance["ressenti"]

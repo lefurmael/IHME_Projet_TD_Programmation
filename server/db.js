@@ -21,6 +21,7 @@ export async function migrate(database = pool) {
       goal TEXT NOT NULL CHECK (goal IN ('endurance', 'technique', 'vitesse')),
       duration INTEGER NOT NULL CHECK (duration IN (30, 45, 60)),
       stroke TEXT NOT NULL CHECK (stroke IN ('crawl', 'dos', 'brasse', 'mixte')),
+      pool_length INTEGER NOT NULL DEFAULT 25 CHECK (pool_length IN (25, 50)),
       warmup TEXT NOT NULL,
       main_sets JSONB NOT NULL,
       cooldown TEXT NOT NULL,
@@ -32,6 +33,10 @@ export async function migrate(database = pool) {
       feeling TEXT CHECK (feeling IN ('tres_facile', 'facile', 'adaptee', 'difficile', 'trop_difficile')),
       note VARCHAR(240) NOT NULL DEFAULT ''
     )
+  `);
+  await database.query(`
+    ALTER TABLE swim_sessions
+    ADD COLUMN IF NOT EXISTS pool_length INTEGER NOT NULL DEFAULT 25
   `);
   await database.query(`
     CREATE INDEX IF NOT EXISTS swim_sessions_context_idx

@@ -9,10 +9,20 @@ test("generates two compatible main sets for every supported criteria", async ()
     for (const goal of ["endurance", "technique", "vitesse"]) {
       for (const duration of [30, 45, 60]) {
         for (const stroke of ["crawl", "dos", "brasse", "mixte"]) {
-          const session = generateSession({ level, goal, duration, stroke }, data);
-          assert.equal(session.mainSets.length, 2);
-          assert.equal(session.duration, duration);
-          assert.ok(session.total > 0);
+          for (const poolLength of [25, 50]) {
+            const session = generateSession({ level, goal, duration, stroke, poolLength }, data);
+            assert.equal(session.mainSets.length, 2);
+            assert.equal(session.duration, duration);
+            assert.equal(session.poolLength, poolLength);
+            assert.ok(session.total > 0);
+            assert.equal(Number(session.warmup.match(/^(\d+) m/)[1]) % poolLength, 0);
+            assert.equal(Number(session.cooldown.match(/^(\d+) m/)[1]) % poolLength, 0);
+            for (const mainSet of session.mainSets) {
+              const distance = Number(mainSet.match(/x (\d+) m/)[1]);
+              assert.equal(distance % poolLength, 0);
+            }
+            assert.equal(session.total % poolLength, 0);
+          }
         }
       }
     }

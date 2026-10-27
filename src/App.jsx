@@ -6,6 +6,7 @@ const API_BASE = `${BASE_PATH}api`;
 const LEVELS = { debutant: "Débutant", intermediaire: "Intermédiaire", avance: "Avancé" };
 const GOALS = { endurance: "Endurance", technique: "Technique", vitesse: "Vitesse" };
 const STROKES = { crawl: "Crawl", dos: "Dos", brasse: "Brasse", mixte: "Mixte" };
+const POOL_LENGTHS = [25, 50];
 const FEELINGS = {
   tres_facile: "Très facile",
   facile: "Facile",
@@ -33,6 +34,7 @@ function fromDatabase(row) {
     goal: row.goal,
     duration: row.duration,
     stroke: row.stroke,
+    poolLength: row.pool_length,
     warmup: row.warmup,
     mainSets: row.main_sets,
     cooldown: row.cooldown,
@@ -76,6 +78,7 @@ function SessionDetails({ session }) {
       <div className="session-facts">
         <span>{LEVELS[session.level]}</span><span>{GOALS[session.goal]}</span>
         <span>{session.duration} min</span><span>{STROKES[session.stroke]}</span>
+        <span>Bassin {session.poolLength} m</span>
         <strong>{session.total} m</strong>
       </div>
       <div className="workout-grid">
@@ -93,7 +96,7 @@ function PlannerForm({ onGenerate, busy }) {
     <section className="planner-panel" id="creer">
       <div className="section-heading">
         <div><p className="eyebrow">NOUVELLE SÉANCE</p><h2>Quel est ton programme ?</h2></div>
-        <span className="step-count">01 <i>/</i> 04</span>
+        <span className="step-count">01 <i>/</i> 05</span>
       </div>
       <form className="planner-form" onSubmit={onGenerate}>
         <fieldset><legend><span>01</span> Ton niveau</legend><div className="segmented three-up">
@@ -110,6 +113,12 @@ function PlannerForm({ onGenerate, busy }) {
             {Object.entries(STROKES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select></fieldset>
         </div>
+        <fieldset>
+          <legend><span>05</span> Longueur du bassin</legend>
+          <div className="segmented two-up">
+            {POOL_LENGTHS.map((poolLength) => <label key={poolLength}><input type="radio" name="poolLength" value={poolLength} defaultChecked={poolLength === 25} /><span>Bassin de {poolLength} m</span></label>)}
+          </div>
+        </fieldset>
         <button className="primary-button" type="submit" disabled={busy}><span>{busy ? "Préparation…" : "Composer ma séance"}</span><b aria-hidden="true">↗</b></button>
       </form>
     </section>
@@ -168,7 +177,7 @@ function History({ sessions, onSave }) {
     {sessions.length ? <section className="history-list" aria-label="Historique des séances">
       {sessions.map((session) => <article className="history-entry" key={session.id}>
         <div className="history-date"><strong>{new Date(session.createdAt).toLocaleDateString("fr-FR", { day: "2-digit" })}</strong><span>{new Date(session.createdAt).toLocaleDateString("fr-FR", { month: "2-digit", year: "numeric" })}</span></div>
-        <div className="history-main"><div className="history-title-row"><div><p className="eyebrow">{LEVELS[session.level]} · {STROKES[session.stroke]}</p><h2>{GOALS[session.goal]} <span>/ {session.duration} min</span></h2></div><div className="history-distance">{session.total} <small>m</small></div></div>
+        <div className="history-main"><div className="history-title-row"><div><p className="eyebrow">{LEVELS[session.level]} · {STROKES[session.stroke]} · BASSIN {session.poolLength} M</p><h2>{GOALS[session.goal]} <span>/ {session.duration} min</span></h2></div><div className="history-distance">{session.total} <small>m</small></div></div>
           <div className="history-workout"><p><b>Échauffement</b>{session.warmup}</p><p><b>Séries</b>{session.mainSets.join(" · ")}</p><p><b>Retour au calme</b>{session.cooldown}</p></div>
           {session.feedbackSaved ? <div className="saved-feedback"><span className={`status-tag ${session.completed === "oui" ? "complete" : "pending"}`}>{COMPLETION[session.completed]}</span><span className="feeling-chip">{FEELINGS[session.feeling]}</span>{session.note && <p>“{session.note}”</p>}</div> : <FeedbackForm session={session} onSave={onSave} />}
         </div>

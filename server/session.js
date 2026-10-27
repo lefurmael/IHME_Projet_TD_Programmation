@@ -11,6 +11,7 @@ export const LEVELS = {
 export const GOALS = ["endurance", "technique", "vitesse"];
 export const STROKES = ["crawl", "dos", "brasse", "mixte"];
 export const DURATIONS = [30, 45, 60];
+export const POOL_LENGTHS = [25, 50];
 
 export function calculateVolumeAdjustment(sessions) {
   const recent = sessions
@@ -40,18 +41,22 @@ export function calculateVolumeAdjustment(sessions) {
   return { factor: 1, reason: "Les derniers ressentis ne justifient pas de changement de volume." };
 }
 
-export function generateSession({ level, goal, duration, stroke, volumeFactor = 1 }, data = exerciseData) {
+export function generateSession({ level, goal, duration, stroke, poolLength = 25, volumeFactor = 1 }, data = exerciseData) {
+  if (!POOL_LENGTHS.includes(Number(poolLength))) {
+    throw new Error("Choisis un bassin de 25 ou 50 m.");
+  }
+  poolLength = Number(poolLength);
   const target = Math.floor(({ debutant: 1000, intermediaire: 1800, avance: 2800 })[level] * duration / 45 * volumeFactor);
-  const warmupDistance = Math.floor(target * 0.2);
-  const cooldownDistance = Math.floor(target * 0.1);
+  const warmupDistance = Math.max(poolLength, Math.floor(target * 0.2 / poolLength) * poolLength);
+  const cooldownDistance = Math.max(poolLength, Math.floor(target * 0.1 / poolLength) * poolLength);
   const mainTarget = target - warmupDistance - cooldownDistance;
   const candidates = data.series.filter((series) =>
     series.objectif === goal
     && series.niveaux.includes(level)
     && (stroke === "mixte" || series.nages.includes(stroke)),
-  );
+  ).filter((series) => series.distance % poolLength === 0);
   if (!candidates.length) {
-    throw new Error("Aucune série disponible pour ces critères.");
+    throw new Error("Aucune série compatible avec ces critères et la longueur du bassin.");
   }
 
   const selected = [...candidates].sort(() => Math.random() - 0.5).slice(0, 2);
@@ -70,6 +75,7 @@ export function generateSession({ level, goal, duration, stroke, volumeFactor = 
     goal,
     duration,
     stroke,
+    poolLength,
     volumeAdjustment: Math.round((volumeFactor - 1) * 100),
     warmup: `${warmupDistance} m ${data.echauffements[Math.floor(Math.random() * data.echauffements.length)]}`,
     mainSets,

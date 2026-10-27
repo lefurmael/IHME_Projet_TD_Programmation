@@ -1,150 +1,44 @@
-# Planificateur de séances de natation
+# Ligne d'eau - carnet de natation
 
-Application de planification et de suivi de séances de natation. L'interface web
-utilise React et Express; le générateur Python reste disponible dans le terminal.
+Ligne d'eau aide les nageurs à préparer une séance adaptée à leur niveau, leur objectif et leur bassin, puis à garder une trace de leurs entraînements.
 
-## Fonctionnalités
+## Pourquoi cette application ?
 
-- Trois niveaux : débutant, intermédiaire, avancé
-- Trois objectifs : endurance, vitesse, technique
-- Durée au choix : 30, 45 ou 60 minutes
-- Nage au choix : crawl, dos, brasse ou séance mixte
-- Séances composées d'un échauffement, de deux séries principales et d'un retour au calme
-- Journal local des séances, bilans, difficultés ressenties et notes personnelles
-- Ajustement modéré du volume selon les bilans comparables récents
-- Interface web déployable sur l'espace IHME de la promotion
+Quand on nage librement, il peut être difficile de choisir un volume réaliste, de varier les exercices et de se souvenir des séances précédentes. Ligne d'eau propose une séance structurée et permet d'enregistrer un bilan ensuite.
 
-## Prérequis
+Elle s'adresse aux nageurs débutants à avancés qui souhaitent organiser leurs entraînements libres. Les séances proposées restent générales et ne remplacent pas les conseils d'un entraîneur.
 
-- Python 3.10 ou plus récent
-- Node.js 24 et npm pour l'interface web
-- Git
+## Créer une séance
 
-## Installation
+Depuis [l'espace Ligne d'eau](https://node219697-ihme26.jcloud.ik-server.com/projet-td-programmation/), choisis ton niveau, ton objectif, le temps disponible, la nage et la longueur du bassin : 25 ou 50 m.
 
-```bash
-git clone https://github.com/lefurmael/IHME_Projet_TD_Programmation.git
-cd IHME_Projet_TD_Programmation
-python3 -m venv .venv
-source .venv/bin/activate
-```
+La séance comprend un échauffement, deux séries principales et un retour au calme. Toutes les distances sont des multiples exacts du bassin choisi : en bassin de 25 m, les blocs font 25, 50, 75 m, etc.; en bassin de 50 m, ils font 50, 100, 150 m, etc.
 
-## Lancer l'interface web avec Docker
+## Après la nage
 
-```bash
-docker compose up --build
-```
+Dans l'historique, indique si la séance est terminée, partielle ou non réalisée, puis note le ressenti : très facile, facile, adaptée, difficile ou trop difficile. Une note facultative peut garder un commentaire d'entraînement.
 
-Ouvre ensuite <http://localhost:5002>. PostgreSQL conserve l'historique dans un
-volume Docker local. Arrête les services avec `Ctrl+C`.
+Pour une même combinaison de niveau, objectif, nage et longueur de bassin, les bilans de séances terminées peuvent modérer le volume proposé :
 
-Pour lancer l'interface sans Docker, il faut Node.js 24 et un serveur PostgreSQL :
+- Séance difficile : volume réduit de 10 %
+- Séance trop difficile : volume réduit de 15 %
+- Au moins deux séances faciles parmi les trois dernières : volume augmenté de 5 %
+- Sinon : volume standard
 
-```bash
-npm install
-docker compose up -d db
-cp .env.example .env
-npm run db:migrate
-npm run dev:api
-npm run dev
-```
+Le programme explique les ajustements. Les séances partielles ou non réalisées ne déclenchent pas de progression.
 
-## Déployer sur l'espace IHME
+## Espace et confidentialité
 
-Le workflow `.github/workflows/publish.yml` construit et publie une image après
-chaque push sur `main` ou `master`. Pour la déployer, ouvrir **Actions** sur
-GitHub, choisir **Construire et publier l'image**, cliquer **Run workflow** et
-cocher l'option de déploiement.
+Cette version est une démonstration pédagogique sans création de compte. L'historique de cet espace n'est pas privé : les séances peuvent être vues par les personnes qui ont accès à son adresse. L'hébergement du cours impose d'utiliser uniquement des données fictives. N'y saisis pas ton nom, des informations personnelles ou de santé, ni de commentaire confidentiel.
 
-Dans les paramètres **Settings → Secrets and variables → Actions** du dépôt,
-configurer `IHME_BASE_PATH` (le chemin attribué, ici `/projet-td-programmation/`),
-`IHME_DEPLOY_URL` et le secret `IHME_DEPLOY_TOKEN` reçus de l'enseignant. Ne
-jamais ajouter le jeton au dépôt ni le partager dans une capture ou un message.
-Le dépôt d'image doit être autorisé par l'enseignant. Voir le
-[guide étudiant du professeur](https://github.com/cedrictisseyre/ihme-suivi/blob/main/docs/deployer-son-projet.md).
+Un espace réellement individuel nécessiterait une authentification, des données séparées par utilisateur et un hébergement adapté aux informations privées. Ce n'est pas fourni par cette démonstration; il faudrait le concevoir et le déployer séparément avec l'accord de l'enseignant.
 
-## Utiliser le générateur en terminal
+## Pour les développeurs
 
-```bash
-python generator.py
-```
-
-Le menu terminal permet aussi de générer une séance, d'enregistrer un bilan et
-de consulter l'historique. Une séance générée est conservée comme « à faire ».
-
-Pour enregistrer un bilan, indique si la séance a été faite, sa difficulté
-ressentie (`tres_facile`, `facile`, `adaptee`, `difficile` ou `trop_difficile`)
-et une note facultative.
-
-Le journal est enregistré dans `data/suivi.json` et reste sur ton ordinateur.
-Ce fichier est ignoré par Git pour ne pas publier tes données personnelles.
-Sur l'hébergement partagé du cours, utilise uniquement des données fictives :
-n'y saisis pas de note personnelle ou d'information de santé réelle.
-
-Pour lancer les tests du moteur Python :
+Le générateur peut aussi être lancé en terminal avec `python generator.py`. Les tests Python se lancent avec :
 
 ```bash
 python -m unittest discover -s tests
 ```
 
-Pour tester le moteur Node (Node.js 24 requis) :
-
-```bash
-npm test
-```
-
-## Adaptation du volume
-
-L'adaptation ne concerne que les séances entièrement réalisées avec le même
-niveau, objectif et nage. Une séance ressentie « difficile » réduit le volume
-suivant de 10 %, une séance « trop difficile » de 15 %. Après au moins deux
-séances faciles parmi les trois dernières et sans ressenti difficile, le volume
-augmente de 5 %. Dans les autres cas, le volume reste standard. Le programme
-affiche la raison de l'adaptation.
-
-## Structure du projet
-
-```
-.
-├── generator.py
-├── tracker.py
-├── webapp.py
-├── server/
-│   ├── app.js
-│   ├── db.js
-│   ├── index.js
-│   └── session.js
-├── src/
-│   ├── App.jsx
-│   └── main.jsx
-├── index.html
-├── vite.config.js
-├── package.json
-├── deploy/request.py
-├── .github/workflows/publish.yml
-├── templates/
-│   ├── base.html
-│   ├── index.html
-│   └── history.html
-├── static/
-│   └── style.css
-├── Dockerfile
-├── compose.yaml
-├── requirements.txt
-├── data/
-│   └── exercices.json
-├── tests/
-│   ├── test_tracker.py
-│   └── test_webapp.py
-├── .gitignore
-└── README.md
-```
-
-## Avertissement
-
-Les séances sont des propositions générales et ne remplacent pas l'avis
-d'un entraîneur.
-
-## Auteur
-
-Maël LEFUR
+La version web utilise React, Express et PostgreSQL. Pour la construire et la déployer, consulte le [guide étudiant du cours IHME](https://github.com/cedrictisseyre/ihme-suivi/blob/main/docs/deployer-son-projet.md).
