@@ -4,3 +4,13 @@ __pycache__
 *.py[cod]
 tests
 data/suivi.json
+.github
+node_modules
+dist
+.env
+.env.*
+.private
+deploy.curl
+backups
+*.dump
+*.log

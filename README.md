@@ -1,7 +1,7 @@
 # Planificateur de séances de natation
 
-Petit outil en Python qui propose des séances de natation selon le niveau,
-l'objectif, la durée et la nage souhaitée, puis permet de suivre les entraînements.
+Application de planification et de suivi de séances de natation. L'interface web
+utilise React et Express; le générateur Python reste disponible dans le terminal.
 
 ## Fonctionnalités
 
@@ -12,10 +12,12 @@ l'objectif, la durée et la nage souhaitée, puis permet de suivre les entraîne
 - Séances composées d'un échauffement, de deux séries principales et d'un retour au calme
 - Journal local des séances, bilans, difficultés ressenties et notes personnelles
 - Ajustement modéré du volume selon les bilans comparables récents
+- Interface web déployable sur l'espace IHME de la promotion
 
 ## Prérequis
 
 - Python 3.10 ou plus récent
+- Node.js 24 et npm pour l'interface web
 - Git
 
 ## Installation
@@ -27,22 +29,39 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-## Lancer l'interface web
+## Lancer l'interface web avec Docker
 
 ```bash
 docker compose up --build
 ```
 
-Ouvre ensuite <http://localhost:5002>. Le dossier `data/` est monté dans le
-conteneur pour conserver ton journal entre deux lancements. Arrête le serveur
-avec `Ctrl+C`.
+Ouvre ensuite <http://localhost:5002>. PostgreSQL conserve l'historique dans un
+volume Docker local. Arrête les services avec `Ctrl+C`.
 
-Sans Docker, tu peux lancer l'interface localement :
+Pour lancer l'interface sans Docker, il faut Node.js 24 et un serveur PostgreSQL :
 
 ```bash
-pip install -r requirements.txt
-python webapp.py
+npm install
+docker compose up -d db
+cp .env.example .env
+npm run db:migrate
+npm run dev:api
+npm run dev
 ```
+
+## Déployer sur l'espace IHME
+
+Le workflow `.github/workflows/publish.yml` construit et publie une image après
+chaque push sur `main` ou `master`. Pour la déployer, ouvrir **Actions** sur
+GitHub, choisir **Construire et publier l'image**, cliquer **Run workflow** et
+cocher l'option de déploiement.
+
+Dans les paramètres **Settings → Secrets and variables → Actions** du dépôt,
+configurer `IHME_BASE_PATH` (le chemin attribué, ici `/ihme/`),
+`IHME_DEPLOY_URL` et le secret `IHME_DEPLOY_TOKEN` reçus de l'enseignant. Ne
+jamais ajouter le jeton au dépôt ni le partager dans une capture ou un message.
+Le dépôt d'image doit être autorisé par l'enseignant. Voir le
+[guide étudiant du professeur](https://github.com/cedrictisseyre/ihme-suivi/blob/main/docs/deployer-son-projet.md).
 
 ## Utiliser le générateur en terminal
 
@@ -59,11 +78,19 @@ et une note facultative.
 
 Le journal est enregistré dans `data/suivi.json` et reste sur ton ordinateur.
 Ce fichier est ignoré par Git pour ne pas publier tes données personnelles.
+Sur l'hébergement partagé du cours, utilise uniquement des données fictives :
+n'y saisis pas de note personnelle ou d'information de santé réelle.
 
-Pour lancer les tests automatisés :
+Pour lancer les tests du moteur Python :
 
 ```bash
 python -m unittest discover -s tests
+```
+
+Pour tester le moteur Node (Node.js 24 requis) :
+
+```bash
+npm test
 ```
 
 ## Adaptation du volume
@@ -82,6 +109,19 @@ affiche la raison de l'adaptation.
 ├── generator.py
 ├── tracker.py
 ├── webapp.py
+├── server/
+│   ├── app.js
+│   ├── db.js
+│   ├── index.js
+│   └── session.js
+├── src/
+│   ├── App.jsx
+│   └── main.jsx
+├── index.html
+├── vite.config.js
+├── package.json
+├── deploy/request.py
+├── .github/workflows/publish.yml
 ├── templates/
 │   ├── base.html
 │   ├── index.html

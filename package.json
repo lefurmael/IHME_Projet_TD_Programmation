@@ -1,0 +1,27 @@
+{
+  "name": "ihme-projet-natation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "dev:api": "node --env-file=.env server/index.js",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "db:migrate": "node --env-file=.env server/migrate.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "pg": "^8.16.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.12"
+  }
+}
