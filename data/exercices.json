@@ -22,6 +22,7 @@
     {"objectif": "vitesse", "niveaux": ["debutant"], "nages": ["crawl", "dos", "brasse"], "distance": 50, "description": "nage rapide en gardant une technique propre", "repos": 45},
     {"objectif": "vitesse", "niveaux": ["debutant"], "nages": ["brasse"], "distance": 25, "description": "brasse tonique, geste maîtrisé", "repos": 40},
     {"objectif": "vitesse", "niveaux": ["intermediaire", "avance"], "nages": ["crawl", "dos", "brasse"], "distance": 50, "description": "rapide", "repos": 30},
+    {"objectif": "vitesse", "niveaux": ["intermediaire", "avance"], "nages": ["dos"], "distance": 50, "description": "dos rapide, virage soigné", "repos": 35},
     {"objectif": "vitesse", "niveaux": ["avance"], "nages": ["crawl", "dos", "brasse"], "distance": 100, "description": "vif", "repos": 40},
     {"objectif": "vitesse", "niveaux": ["debutant", "intermediaire"], "nages": ["crawl", "dos"], "distance": 25, "description": "départ rapide puis nage souple", "repos": 35},
     {"objectif": "vitesse", "niveaux": ["intermediaire", "avance"], "nages": ["crawl", "brasse"], "distance": 50, "description": "25 m rapides / 25 m souples", "repos": 30},
