@@ -52,6 +52,65 @@ function shortDate(value) {
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value));
 }
 
+function startOfWeek(date) {
+  const monday = new Date(date);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  return monday;
+}
+
+function WeeklyVolumeChart({ sessions }) {
+  const currentWeek = startOfWeek(new Date());
+  const weeks = Array.from({ length: 8 }, (_, index) => {
+    const start = new Date(currentWeek);
+    start.setDate(start.getDate() - (7 * (7 - index)));
+    return { start, endurance: 0, technique: 0, vitesse: 0, total: 0 };
+  });
+  const weeksByStart = new Map(weeks.map((week) => [week.start.getTime(), week]));
+
+  sessions.forEach((session) => {
+    const week = weeksByStart.get(startOfWeek(new Date(session.createdAt)).getTime());
+    if (!week || !Object.hasOwn(GOALS, session.goal)) return;
+    const distance = Number(session.total);
+    if (!Number.isFinite(distance) || distance <= 0) return;
+    week[session.goal] += distance;
+    week.total += distance;
+  });
+
+  const maxVolume = Math.max(...weeks.map((week) => week.total), 1);
+  const weekLabel = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short" });
+
+  return <section className="weekly-volume-panel" aria-labelledby="weekly-volume-title">
+    <div className="section-heading">
+      <div><p className="eyebrow">TON RYTHME · 8 DERNIÈRES SEMAINES</p><h2 id="weekly-volume-title">Volume par semaine</h2></div>
+      <span className="weekly-volume-unit">mètres prévus</span>
+    </div>
+    {sessions.length ? <>
+      <div className="weekly-volume-chart" role="group" aria-label="Volume hebdomadaire réparti par objectif">
+        {weeks.map((week) => {
+          const segments = ["endurance", "technique", "vitesse"];
+          const label = `${weekLabel.format(week.start)} : ${week.total} mètres au total, dont ${segments.map((goal) => `${week[goal]} en ${GOALS[goal].toLowerCase()}`).join(", ")}`;
+          return <div className="weekly-volume-column" key={week.start.getTime()} role="img" aria-label={label}>
+            <strong className="weekly-volume-total">{week.total ? week.total.toLocaleString("fr-FR") : "—"}</strong>
+            <div className="weekly-volume-bar" aria-hidden="true">
+              {segments.map((goal) => <span
+                className={`weekly-volume-segment ${goal}`}
+                key={goal}
+                style={{ height: `${week[goal] / maxVolume * 100}%` }}
+              />)}
+            </div>
+            <span className="weekly-volume-date">{weekLabel.format(week.start)}</span>
+          </div>;
+        })}
+      </div>
+      <div className="weekly-volume-legend" aria-label="Légende des objectifs">
+        {Object.entries(GOALS).map(([goal, label]) => <span key={goal}><i className={`weekly-volume-swatch ${goal}`} />{label}</span>)}
+      </div>
+      <p className="weekly-volume-note">Chaque séance compte son volume prévu, qu’elle soit terminée ou non. Les séances partielles ne précisent pas la distance réellement nagée.</p>
+    </> : <p className="empty-copy">Ton graphique se remplira dès que tu auras ajouté une séance à ton carnet.</p>}
+  </section>;
+}
+
 function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
@@ -203,6 +262,7 @@ function FeedbackForm({ session, onSave }) {
 function History({ sessions, onSave, onDelete }) {
   return <>
     <section className="welcome-row history-heading"><div><p className="eyebrow">TON PARCOURS · CARNET PERSONNEL</p><h1>Chaque longueur compte<span>.</span></h1><p className="lede">Tes séances, tes ressentis, ta progression.</p></div><a className="primary-button compact-button" href={`${BASE_PATH}#creer`}><span>Nouvelle séance</span><b aria-hidden="true">↗</b></a></section>
+    <WeeklyVolumeChart sessions={sessions} />
     {sessions.length ? <section className="history-list" aria-label="Historique des séances">
       {sessions.map((session) => <article className="history-entry" key={session.id}>
         <div className="history-date"><strong>{new Date(session.createdAt).toLocaleDateString("fr-FR", { day: "2-digit" })}</strong><span>{new Date(session.createdAt).toLocaleDateString("fr-FR", { month: "2-digit", year: "numeric" })}</span></div>

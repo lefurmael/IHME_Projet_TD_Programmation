@@ -35,6 +35,12 @@ Pour une même combinaison de niveau, objectif, nage et longueur de bassin, les 
 
 Le programme explique les ajustements. Les séances partielles ou non réalisées ne déclenchent pas de progression.
 
+## Graphique hebdomadaire
+
+Dans l'historique, un graphique empilé montre le volume prévu des huit dernières semaines, avec une couleur pour chacun des objectifs : endurance, technique et vitesse. Les chiffres au-dessus des barres indiquent le volume hebdomadaire total en mètres; la légende et les libellés accessibles détaillent la répartition. Les semaines sans séance apparaissent aussi pour rendre les périodes régulières ou les pauses visibles.
+
+Le graphique utilise les séances déjà chargées pour le compte connecté : aucune donnée supplémentaire n'est stockée ou partagée. Comme le carnet ne demande pas la distance réellement nagée pour une séance partielle, le graphique compte la distance prévue de chaque séance enregistrée et ne la présente pas comme un volume effectivement nagé.
+
 ## Tests chronométrés
 
 Dans l'onglet « Tests », choisis un test de 50, 200 ou 400 m, puis saisis la durée en minutes et secondes. Le carnet conserve chaque résultat dans ton compte, calcule l'allure moyenne par 100 m et met en avant ton meilleur temps pour chacune des trois distances. Les temps sont des mesures saisies par le nageur; l'allure est une moyenne calculée à partir de la distance et du temps, pas une évaluation automatique du niveau.
@@ -58,6 +64,13 @@ La version web utilise React, Express et PostgreSQL. Pour la construire et la d�
 ## Historique des modifications
 
 Chaque modification fonctionnelle réalisée avec l'utilisateur doit être ajoutée ici, avec son intérêt et ses conséquences visibles.
+
+### 2026-10-28 — Graphique hebdomadaire du volume des séances
+
+- Ajout à l'historique d'un graphique empilé sur les huit dernières semaines pour suivre le volume prévu en mètres, semaine après semaine.
+- Répartition des distances par objectif (endurance, technique et vitesse), avec légende, totaux hebdomadaires et semaines à zéro visibles : cela aide à repérer la régularité et la place de chaque type d'entraînement.
+- Le graphique réutilise les séances déjà isolées par compte connecté et n'ajoute ni stockage ni dépendance externe.
+- Précision affichée dans l'application et dans cette documentation : les distances sont celles prévues par les séances enregistrées, pas une mesure de la distance réellement nagée lorsque le bilan est partiel.
 
 ### 2026-10-28 — Comptes personnels et remise à zéro de l'historique hébergé
 
