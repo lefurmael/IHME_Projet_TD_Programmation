@@ -14,6 +14,8 @@ Depuis [l'espace Ligne d'eau](https://node219697-ihme26.jcloud.ik-server.com/pro
 
 La séance comprend un échauffement, deux séries principales et un retour au calme. Toutes les distances sont des multiples exacts du bassin choisi : en bassin de 25 m, les blocs font 25, 50, 75 m, etc.; en bassin de 50 m, ils font 50, 100, 150 m, etc.
 
+Lors de la première visite, crée un compte avec une adresse e-mail et un mot de passe d'au moins 10 caractères. Les visites suivantes permettent de se connecter et de retrouver son espace. Le mot de passe est stocké sous forme de hachage; la session de connexion est conservée dans un cookie HttpOnly pendant 30 jours. Il n'y a pas de procédure de récupération de mot de passe.
+
 ## Après la nage
 
 Dans l'historique, indique si la séance est terminée, partielle ou non réalisée, puis note le ressenti : très facile, facile, adaptée, difficile ou trop difficile. Une note facultative peut garder un commentaire d'entraînement.
@@ -27,11 +29,11 @@ Pour une même combinaison de niveau, objectif, nage et longueur de bassin, les 
 
 Le programme explique les ajustements. Les séances partielles ou non réalisées ne déclenchent pas de progression.
 
-## Espace et confidentialité
+## Comptes et confidentialité
 
-Cette version est une démonstration pédagogique sans création de compte. L'historique de cet espace n'est pas privé : les séances peuvent être vues par les personnes qui ont accès à son adresse. L'hébergement du cours impose d'utiliser uniquement des données fictives. N'y saisis pas ton nom, des informations personnelles ou de santé, ni de commentaire confidentiel.
+Chaque compte dispose de son propre historique : les séances, bilans et ajustements de volume ne sont accessibles qu'après connexion au compte qui les a créés. Utilise une adresse fictive (par exemple `nageur@example.test`) sur cette démonstration pédagogique, et n'y saisis pas d'informations personnelles réelles, de santé ou de commentaire confidentiel. Le mot de passe ne peut pas être récupéré; garde-le en lieu sûr.
 
-Un espace réellement individuel nécessiterait une authentification, des données séparées par utilisateur et un hébergement adapté aux informations privées. Ce n'est pas fourni par cette démonstration; il faudrait le concevoir et le déployer séparément avec l'accord de l'enseignant.
+L'historique commun présent avant l'activation des comptes sera remis à zéro une seule fois par la migration de base de données en environnement de production. La migration s'exécute au démarrage de la nouvelle version; le site hébergé ne changera qu'après son déploiement. Elle ne supprime pas l'historique d'une base locale de développement. Les anciennes séances locales qui n'ont pas de compte restent sans propriétaire et ne sont donc pas affichées dans un compte.
 
 ## Pour les développeurs
 
@@ -42,3 +44,15 @@ python -m unittest discover -s tests
 ```
 
 La version web utilise React, Express et PostgreSQL. Pour la construire et la déployer, consulte le [guide étudiant du cours IHME](https://github.com/cedrictisseyre/ihme-suivi/blob/main/docs/deployer-son-projet.md).
+
+## Historique des modifications
+
+Chaque modification fonctionnelle réalisée avec l'utilisateur doit être ajoutée ici, avec son intérêt et ses conséquences visibles.
+
+### 2026-10-28 — Comptes personnels et remise à zéro de l'historique hébergé
+
+- Ajout de la création de compte et de la connexion par adresse e-mail et mot de passe : chacun peut retrouver son carnet sur plusieurs visites sans voir celui des autres. Les mots de passe sont hachés avec scrypt; les sessions utilisent un cookie HttpOnly, SameSite=Lax, d'une durée de 30 jours et limité au chemin de l'application. Aucune récupération de mot de passe n'est prévue.
+- Cloisonnement par compte des séances, bilans et séances comparables utilisées pour adapter le volume : cela empêche de mélanger les données de plusieurs nageurs.
+- Ajout d'une migration de production exécutée une seule fois qui supprime l'ancien historique partagé et réinitialise les identifiants de séances. Les bases locales ne sont pas vidées; leurs anciennes séances non attribuées ne sont pas visibles dans les carnets.
+- Ajout d'un écran de connexion/création de compte, de l'affichage du compte connecté et de la déconnexion pour rendre l'accès personnel visible et utilisable; le chemin de base de l'application est transmis à l'image afin de limiter le cookie au bon chemin.
+- Documentation des étapes d'accès et de confidentialité, et tests des hachages, de l'inscription et de la protection de l'historique.

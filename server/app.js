@@ -3,10 +3,57 @@ import helmet from "helmet";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  createSessionToken,
+  hashPassword,
+  hashSessionToken,
+  isValidEmail,
+  normalizeEmail,
+  verifyPassword,
+} from "./auth.js";
 import { calculateVolumeAdjustment, DURATIONS, generateSession, GOALS, LEVELS, POOL_LENGTHS, STROKES } from "./session.js";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const publicOrigin = process.env.PUBLIC_ORIGIN;
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+const COOKIE_PATH = process.env.BASE_PATH?.startsWith("/")
+  ? process.env.BASE_PATH
+  : "/";
+
+function readSessionToken(request) {
+  const cookie = request.headers.cookie?.split(";")
+    .map((value) => value.trim())
+    .find((value) => value.startsWith("ligne_eau_session="));
+  if (!cookie) return null;
+  try {
+    return decodeURIComponent(cookie.slice("ligne_eau_session=".length));
+  } catch {
+    return null;
+  }
+}
+
+function sessionCookie(token) {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `ligne_eau_session=${encodeURIComponent(token)}; Path=${COOKIE_PATH}; HttpOnly; SameSite=Lax; Max-Age=${SESSION_MAX_AGE_SECONDS}${secure}`;
+}
+
+function clearSessionCookie() {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `ligne_eau_session=; Path=${COOKIE_PATH}; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+}
+
+async function findUserForRequest(database, request) {
+  const token = readSessionToken(request);
+  if (!token) return null;
+  const result = await database.query(
+    `SELECT users.id, users.email
+     FROM auth_sessions AS sessions
+     JOIN swim_users AS users ON users.id = sessions.user_id
+     WHERE sessions.token_hash = $1 AND sessions.expires_at > NOW()`,
+    [hashSessionToken(token)],
+  );
+  return result.rows[0] ?? null;
+}
 
 export function createApp(database) {
   const app = express();
@@ -48,10 +95,101 @@ export function createApp(database) {
     }
   });
 
+  app.get("/api/auth/me", async (request, response, next) => {
+    try {
+      response.json({ user: await findUserForRequest(database, request) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/auth/register", async (request, response, next) => {
+    const email = typeof request.body?.email === "string" ? normalizeEmail(request.body.email) : "";
+    const password = request.body?.password;
+    if (!isValidEmail(email) || typeof password !== "string" || password.length < 10 || password.length > 128) {
+      return response.status(400).json({ error: "Indique une adresse e-mail valide et un mot de passe de 10 à 128 caractères." });
+    }
+
+    try {
+      const passwordHash = await hashPassword(password);
+      const result = await database.query(
+        "INSERT INTO swim_users (email, password_hash) VALUES ($1, $2) RETURNING id, email",
+        [email, passwordHash],
+      );
+      const user = result.rows[0];
+      const token = createSessionToken();
+      await database.query(
+        "INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 days')",
+        [hashSessionToken(token), user.id],
+      );
+      response.setHeader("Set-Cookie", sessionCookie(token));
+      response.status(201).json({ user });
+    } catch (error) {
+      if (error.code === "23505") {
+        return response.status(409).json({ error: "Un compte existe déjà pour cette adresse e-mail." });
+      }
+      next(error);
+    }
+  });
+
+  app.post("/api/auth/login", async (request, response, next) => {
+    const email = typeof request.body?.email === "string" ? normalizeEmail(request.body.email) : "";
+    const password = request.body?.password;
+    if (!isValidEmail(email) || typeof password !== "string" || password.length > 128) {
+      return response.status(400).json({ error: "Adresse e-mail ou mot de passe invalide." });
+    }
+
+    try {
+      const result = await database.query(
+        "SELECT id, email, password_hash FROM swim_users WHERE email = $1",
+        [email],
+      );
+      const user = result.rows[0];
+      if (!user || !(await verifyPassword(password, user.password_hash))) {
+        return response.status(401).json({ error: "Adresse e-mail ou mot de passe incorrect." });
+      }
+      const token = createSessionToken();
+      await database.query(
+        "INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL '30 days')",
+        [hashSessionToken(token), user.id],
+      );
+      response.setHeader("Set-Cookie", sessionCookie(token));
+      response.json({ user: { id: user.id, email: user.email } });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/auth/logout", async (request, response, next) => {
+    try {
+      const token = readSessionToken(request);
+      if (token) {
+        await database.query("DELETE FROM auth_sessions WHERE token_hash = $1", [hashSessionToken(token)]);
+      }
+      response.setHeader("Set-Cookie", clearSessionCookie());
+      response.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.use("/api/sessions", async (request, response, next) => {
+    try {
+      request.user = await findUserForRequest(database, request);
+      if (!request.user) {
+        return response.status(401).json({ error: "Connecte-toi pour accéder à ton carnet." });
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/sessions", async (_request, response, next) => {
     try {
       const result = await database.query(
-        "SELECT * FROM swim_sessions ORDER BY created_at DESC, id DESC",
+        "SELECT * FROM swim_sessions WHERE user_id = $1 ORDER BY created_at DESC, id DESC",
+        [_request.user.id],
       );
       response.json(result.rows);
     } catch (error) {
@@ -75,10 +213,10 @@ export function createApp(database) {
     try {
       const recent = await database.query(
         `SELECT completed, feeling FROM swim_sessions
-         WHERE level = $1 AND goal = $2 AND stroke = $3
-           AND pool_length = $4 AND feedback_saved = TRUE AND completed = 'oui'
+         WHERE user_id = $1 AND level = $2 AND goal = $3 AND stroke = $4
+           AND pool_length = $5 AND feedback_saved = TRUE AND completed = 'oui'
          ORDER BY created_at DESC, id DESC LIMIT 3`,
-        [level, goal, stroke, poolLength],
+        [request.user.id, level, goal, stroke, poolLength],
       );
       const adjustment = calculateVolumeAdjustment(recent.rows);
       const session = generateSession({
@@ -91,10 +229,10 @@ export function createApp(database) {
       });
       const result = await database.query(
         `INSERT INTO swim_sessions
-          (level, goal, duration, stroke, pool_length, warmup, main_sets, cooldown, total, volume_adjustment, adjustment_reason)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          (user_id, level, goal, duration, stroke, pool_length, warmup, main_sets, cooldown, total, volume_adjustment, adjustment_reason)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          RETURNING *`,
-        [level, goal, Number(duration), stroke, poolLength, session.warmup, JSON.stringify(session.mainSets), session.cooldown, session.total, session.volumeAdjustment, adjustment.reason],
+        [request.user.id, level, goal, Number(duration), stroke, poolLength, session.warmup, JSON.stringify(session.mainSets), session.cooldown, session.total, session.volumeAdjustment, adjustment.reason],
       );
       response.status(201).json(result.rows[0]);
     } catch (error) {
@@ -116,8 +254,8 @@ export function createApp(database) {
       const result = await database.query(
         `UPDATE swim_sessions
          SET feedback_saved = TRUE, completed = $2, feeling = $3, note = $4
-         WHERE id = $1 RETURNING *`,
-        [request.params.id, completed, feeling, note.trim()],
+         WHERE id = $1 AND user_id = $5 RETURNING *`,
+        [request.params.id, completed, feeling, note.trim(), request.user.id],
       );
       if (!result.rowCount) {
         return response.status(404).json({ error: "Séance introuvable." });

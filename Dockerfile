@@ -7,7 +7,9 @@ ARG BASE_PATH=/
 RUN npm run build -- --base="${BASE_PATH}"
 
 FROM node:24-bookworm-slim
+ARG BASE_PATH=/
 ENV NODE_ENV=production PORT=3000
+ENV BASE_PATH=${BASE_PATH}
 WORKDIR /app
 COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi \

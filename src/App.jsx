@@ -52,20 +52,38 @@ function shortDate(value) {
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value));
 }
 
-function BrandHeader({ history }) {
+function BrandHeader({ history, user, onLogout }) {
   return (
     <header className="topbar">
       <a className="brand" href={BASE_PATH} aria-label="Ligne d'eau, accueil">
         <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
         <span><strong>LIGNE D'EAU</strong><small>CARNET DE NATATION</small></span>
       </a>
-      <nav className="main-nav" aria-label="Navigation principale">
-        <a className={!history ? "active" : ""} href={BASE_PATH}>Séance</a>
-        <a className={history ? "active" : ""} href={`${BASE_PATH}historique`}>Historique</a>
-      </nav>
-      <span className="local-status"><span />Suivi personnel</span>
+      {user && <>
+        <nav className="main-nav" aria-label="Navigation principale">
+          <a className={!history ? "active" : ""} href={BASE_PATH}>Séance</a>
+          <a className={history ? "active" : ""} href={`${BASE_PATH}historique`}>Historique</a>
+        </nav>
+        <div className="account-controls"><span className="local-status"><span />{user.email}</span><button type="button" onClick={onLogout}>Déconnexion</button></div>
+      </>}
     </header>
   );
+}
+
+function AuthScreen({ mode, onModeChange, onSubmit, busy }) {
+  const registering = mode === "register";
+  return <section className="auth-panel">
+    <p className="eyebrow">TON ESPACE PERSONNEL</p>
+    <h1>{registering ? "Crée ton carnet." : "Retrouve ton carnet."}</h1>
+    <p className="lede">Tes séances et tes bilans restent associés à ton compte.</p>
+    <form className="auth-form" onSubmit={onSubmit}>
+      <label>Adresse e-mail<input type="email" name="email" autoComplete="email" maxLength="254" required /></label>
+      <label>Mot de passe<input type="password" name="password" autoComplete={registering ? "new-password" : "current-password"} minLength={registering ? "10" : undefined} maxLength="128" required /></label>
+      {registering && <small>10 caractères minimum. Aucun e-mail de récupération n’est prévu : garde ton mot de passe en lieu sûr.</small>}
+      <button className="primary-button" type="submit" disabled={busy}><span>{busy ? "Connexion…" : registering ? "Créer mon espace" : "Me connecter"}</span><b aria-hidden="true">↗</b></button>
+    </form>
+    <p className="auth-switch">{registering ? "Tu as déjà un compte ?" : "C’est ta première visite ?"} <button type="button" onClick={() => onModeChange(registering ? "login" : "register")}>{registering ? "Me connecter" : "Créer un compte"}</button></p>
+  </section>;
 }
 
 function SessionDetails({ session }) {
@@ -188,6 +206,9 @@ function History({ sessions, onSave }) {
 
 export default function App() {
   const historyView = window.location.pathname.endsWith("/historique");
+  const [user, setUser] = useState(null);
+  const [authStatus, setAuthStatus] = useState("loading");
+  const [authMode, setAuthMode] = useState("register");
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -199,8 +220,49 @@ export default function App() {
   }
 
   useEffect(() => {
-    loadSessions().catch((error) => setMessage(error.message));
+    requestApi("/auth/me")
+      .then(({ user: currentUser }) => {
+        setUser(currentUser);
+        if (currentUser) return loadSessions();
+        return undefined;
+      })
+      .catch((error) => setMessage(error.message))
+      .finally(() => setAuthStatus("ready"));
   }, []);
+
+  async function authenticate(event) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    try {
+      const { user: authenticatedUser } = await requestApi(`/auth/${authMode}`, {
+        method: "POST",
+        body: JSON.stringify(values),
+      });
+      setUser(authenticatedUser);
+      setAuthStatus("ready");
+      await loadSessions();
+      setMessage(authMode === "register" ? "Ton espace personnel est prêt." : "Tu es connecté.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function logout() {
+    try {
+      await requestApi("/auth/logout", { method: "POST" });
+      setUser(null);
+      setSessions([]);
+      setSelectedSession(null);
+      setAuthMode("login");
+      setMessage("");
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
 
   async function generate(event) {
     event.preventDefault();
@@ -233,8 +295,10 @@ export default function App() {
     }
   }
 
-  return <><BrandHeader history={historyView} /><main className="page-shell">
-    {message && <div className={`flash-stack ${message.includes("prête") || message.includes("enregistré") ? "success" : "error"}`} role="status"><p className={`flash ${message.includes("prête") || message.includes("enregistré") ? "success" : "error"}`}>{message}</p></div>}
-    {historyView ? <History sessions={sessions} onSave={saveFeedback} /> : <Dashboard sessions={sessions} selectedSession={selectedSession} onGenerate={generate} busy={busy} />}
-  </main><footer className="site-footer"><span>LIGNE D'EAU <b>·</b> CARNET PERSONNEL</span><span>Démo pédagogique : données fictives uniquement.</span><span>Aucune donnée personnelle ou de santé.</span></footer></>;
+  return <><BrandHeader history={historyView} user={user} onLogout={logout} /><main className="page-shell">
+    {message && <div className={`flash-stack ${message.includes("prête") || message.includes("enregistré") || message.includes("connecté") ? "success" : "error"}`} role="status"><p className={`flash ${message.includes("prête") || message.includes("enregistré") || message.includes("connecté") ? "success" : "error"}`}>{message}</p></div>}
+    {authStatus === "loading" ? <p role="status">Chargement de ton espace…</p> : user
+      ? (historyView ? <History sessions={sessions} onSave={saveFeedback} /> : <Dashboard sessions={sessions} selectedSession={selectedSession} onGenerate={generate} busy={busy} />)
+      : <AuthScreen mode={authMode} onModeChange={setAuthMode} onSubmit={authenticate} busy={busy} />}
+  </main><footer className="site-footer"><span>LIGNE D'EAU <b>·</b> CARNET PERSONNEL</span><span>Démo pédagogique : données fictives uniquement.</span><span>N’utilise pas d’informations sensibles ou de santé.</span></footer></>;
 }
