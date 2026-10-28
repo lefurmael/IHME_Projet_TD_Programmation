@@ -8,6 +8,10 @@ Quand on nage librement, il peut être difficile de choisir un volume réaliste,
 
 Elle s'adresse aux nageurs débutants à avancés qui souhaitent organiser leurs entraînements libres. Les séances proposées restent générales et ne remplacent pas les conseils d'un entraîneur.
 
+## Identité visuelle
+
+L'interface utilise une palette bleu nuit, bleu piscine et blanc, avec des lignes d'eau et des dégradés inspirés d'un bassin. La typographie privilégie Aeonik si elle est installée localement; sinon, Manrope est chargée depuis Google Fonts comme alternative géométrique proche. Le fichier Aeonik n'est pas distribué avec le projet, car il s'agit d'une police propriétaire.
+
 ## Créer une séance
 
 Depuis [l'espace Ligne d'eau](https://node219697-ihme26.jcloud.ik-server.com/projet-td-programmation/), choisis ton niveau, ton objectif, le temps disponible, la nage et la longueur du bassin : 25 ou 50 m.
@@ -70,3 +74,10 @@ Chaque modification fonctionnelle réalisée avec l'utilisateur doit être ajout
 - Ajout d'un espace Tests avec saisie des temps sur 50, 200 et 400 m : les résultats sont conservés dans le compte et l'allure moyenne par 100 m est calculée pour mieux suivre l'évolution.
 - Affichage de l'historique des chronos et des meilleurs temps par distance, sans prétendre fournir une évaluation automatique du niveau.
 - Ajout de tests serveur pour vérifier l'isolation des résultats, la validation des distances et la suppression limitée au propriétaire.
+
+### 2026-10-28 — Nouvelle identité visuelle
+
+- Remplacement de la palette vert/corail par du bleu nuit, du bleu piscine et du blanc afin de donner à l'application une ambiance plus proche d'une piscine.
+- Renforcement des dégradés et lignes d'eau sur les panneaux principaux, en gardant les couleurs d'alerte distinctes pour rester compréhensibles.
+- Remplacement de Barlow Condensed et DM Sans par Aeonik en priorité lorsqu'elle est déjà disponible sur l'appareil, avec Manrope comme police géométrique de repli chargée pour les pages React et Flask. Aeonik n'est pas incluse dans le dépôt car sa licence est propriétaire.
+- Mise à jour de la couleur du thème navigateur pour reprendre le bleu nuit.
