@@ -173,7 +173,7 @@ export function createApp(database) {
     }
   });
 
-  app.use("/api/sessions", async (request, response, next) => {
+  app.use(["/api/sessions", "/api/tests"], async (request, response, next) => {
     try {
       request.user = await findUserForRequest(database, request);
       if (!request.user) {
@@ -240,6 +240,24 @@ export function createApp(database) {
     }
   });
 
+  app.delete("/api/sessions/:id", async (request, response, next) => {
+    if (!/^\d+$/.test(request.params.id)) {
+      return response.status(404).json({ error: "Séance introuvable." });
+    }
+    try {
+      const result = await database.query(
+        "DELETE FROM swim_sessions WHERE id = $1 AND user_id = $2 RETURNING id",
+        [request.params.id, request.user.id],
+      );
+      if (!result.rowCount) {
+        return response.status(404).json({ error: "Séance introuvable." });
+      }
+      response.json({ deleted: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post("/api/sessions/:id/feedback", async (request, response, next) => {
     const { completed, feeling, note = "" } = request.body ?? {};
     if (
@@ -261,6 +279,41 @@ export function createApp(database) {
         return response.status(404).json({ error: "Séance introuvable." });
       }
       response.json(result.rows[0]);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/tests", async (request, response, next) => {
+    try {
+      const result = await database.query(
+        "SELECT * FROM swim_tests WHERE user_id = $1 ORDER BY created_at DESC, id DESC",
+        [request.user.id],
+      );
+      response.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/tests", async (request, response, next) => {
+    const { distance, elapsedSeconds } = request.body ?? {};
+    if (
+      ![50, 200, 400].includes(distance)
+      || !Number.isSafeInteger(distance)
+      || !Number.isSafeInteger(elapsedSeconds)
+      || elapsedSeconds < 1
+      || elapsedSeconds > 86400
+    ) {
+      return response.status(400).json({ error: "Choisis 50, 200 ou 400 m et indique un temps valide." });
+    }
+    try {
+      const result = await database.query(
+        `INSERT INTO swim_tests (user_id, distance, elapsed_seconds)
+         VALUES ($1, $2, $3) RETURNING *`,
+        [request.user.id, distance, elapsedSeconds],
+      );
+      response.status(201).json(result.rows[0]);
     } catch (error) {
       next(error);
     }

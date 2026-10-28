@@ -52,7 +52,17 @@ function shortDate(value) {
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value));
 }
 
-function BrandHeader({ history, user, onLogout }) {
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
+function formatPace(elapsedSeconds, distance) {
+  return `${formatTime(Math.round(elapsedSeconds * 100 / distance))} / 100 m`;
+}
+
+function BrandHeader({ history, testsPage, user, onLogout }) {
   return (
     <header className="topbar">
       <a className="brand" href={BASE_PATH} aria-label="Ligne d'eau, accueil">
@@ -61,8 +71,9 @@ function BrandHeader({ history, user, onLogout }) {
       </a>
       {user && <>
         <nav className="main-nav" aria-label="Navigation principale">
-          <a className={!history ? "active" : ""} href={BASE_PATH}>Séance</a>
+          <a className={!history && !testsPage ? "active" : ""} href={BASE_PATH}>Séance</a>
           <a className={history ? "active" : ""} href={`${BASE_PATH}historique`}>Historique</a>
+          <a className={testsPage ? "active" : ""} href={`${BASE_PATH}tests`}>Tests</a>
         </nav>
         <div className="account-controls"><span className="local-status"><span />{user.email}</span><button type="button" onClick={onLogout}>Déconnexion</button></div>
       </>}
@@ -189,7 +200,7 @@ function FeedbackForm({ session, onSave }) {
   </form>;
 }
 
-function History({ sessions, onSave }) {
+function History({ sessions, onSave, onDelete }) {
   return <>
     <section className="welcome-row history-heading"><div><p className="eyebrow">TON PARCOURS · CARNET PERSONNEL</p><h1>Chaque longueur compte<span>.</span></h1><p className="lede">Tes séances, tes ressentis, ta progression.</p></div><a className="primary-button compact-button" href={`${BASE_PATH}#creer`}><span>Nouvelle séance</span><b aria-hidden="true">↗</b></a></section>
     {sessions.length ? <section className="history-list" aria-label="Historique des séances">
@@ -197,19 +208,72 @@ function History({ sessions, onSave }) {
         <div className="history-date"><strong>{new Date(session.createdAt).toLocaleDateString("fr-FR", { day: "2-digit" })}</strong><span>{new Date(session.createdAt).toLocaleDateString("fr-FR", { month: "2-digit", year: "numeric" })}</span></div>
         <div className="history-main"><div className="history-title-row"><div><p className="eyebrow">{LEVELS[session.level]} · {STROKES[session.stroke]} · BASSIN {session.poolLength} M</p><h2>{GOALS[session.goal]} <span>/ {session.duration} min</span></h2></div><div className="history-distance">{session.total} <small>m</small></div></div>
           <div className="history-workout"><p><b>Échauffement</b>{session.warmup}</p><p><b>Séries</b>{session.mainSets.join(" · ")}</p><p><b>Retour au calme</b>{session.cooldown}</p></div>
-          {session.feedbackSaved ? <div className="saved-feedback"><span className={`status-tag ${session.completed === "oui" ? "complete" : "pending"}`}>{COMPLETION[session.completed]}</span><span className="feeling-chip">{FEELINGS[session.feeling]}</span>{session.note && <p>“{session.note}”</p>}</div> : <FeedbackForm session={session} onSave={onSave} />}
+          <div className="history-entry-actions">
+            {session.feedbackSaved && <div className="saved-feedback"><span className={`status-tag ${session.completed === "oui" ? "complete" : "pending"}`}>{COMPLETION[session.completed]}</span><span className="feeling-chip">{FEELINGS[session.feeling]}</span>{session.note && <p>“{session.note}”</p>}</div>}
+            <button className="delete-session-button" type="button" onClick={() => onDelete(session.id)}>Supprimer cette séance</button>
+          </div>
+          {!session.feedbackSaved && <FeedbackForm session={session} onSave={onSave} />}
         </div>
       </article>)}
     </section> : <section className="empty-history"><span className="empty-lane" aria-hidden="true">01</span><p className="eyebrow">PAGE BLANCHE</p><h2>Ton carnet commence dans l'eau.</h2><p>Génère une séance; elle apparaîtra ici avec son bilan à compléter.</p><a className="primary-button compact-button" href={`${BASE_PATH}#creer`}><span>Créer ma première séance</span><b aria-hidden="true">↗</b></a></section>}
   </>;
 }
 
+function SwimTests({ results, onSave, busy }) {
+  const distances = [50, 200, 400];
+  const bestByDistance = Object.fromEntries(distances.map((distance) => [
+    distance,
+    results.filter((result) => Number(result.distance) === distance)
+      .reduce((best, result) => !best || Number(result.elapsed_seconds) < Number(best.elapsed_seconds) ? result : best, null),
+  ]));
+
+  return <>
+    <section className="welcome-row history-heading">
+      <div><p className="eyebrow">TES REPÈRES · CHRONOS PERSONNELS</p><h1>Mes tests de nage<span>.</span></h1><p className="lede">Saisis ton temps pour suivre tes progrès et comparer ton allure.</p></div>
+    </section>
+    <section className="test-entry-panel">
+      <form className="test-form" onSubmit={onSave}>
+        <fieldset><legend>Distance du test</legend><div className="segmented three-up">
+          {distances.map((distance, index) => <label key={distance}><input type="radio" name="distance" value={distance} defaultChecked={index === 0} /><span>{distance} m</span></label>)}
+        </div></fieldset>
+        <div className="test-time-fields">
+          <label>Minutes<input type="number" name="minutes" min="0" max="1439" defaultValue="0" required /></label>
+          <label>Secondes<input type="number" name="seconds" min="0" max="59" defaultValue="30" required /></label>
+        </div>
+        <button className="primary-button" type="submit" disabled={busy}><span>{busy ? "Enregistrement…" : "Enregistrer mon chrono"}</span><b aria-hidden="true">↗</b></button>
+      </form>
+    </section>
+    <section className="personal-records" aria-label="Meilleurs temps par distance">
+      {distances.map((distance) => {
+        const best = bestByDistance[distance];
+        return <article className="record-card" key={distance}>
+          <span className="eyebrow">{distance} M</span>
+          {best ? <><strong>{formatTime(Number(best.elapsed_seconds))}</strong><small>Allure {formatPace(Number(best.elapsed_seconds), distance)}</small></> : <><strong>—</strong><small>Pas encore de chrono</small></>}
+        </article>;
+      })}
+    </section>
+    <section className="test-history">
+      <div className="section-heading"><div><p className="eyebrow">TES MESURES</p><h2>Historique des tests</h2></div></div>
+      {results.length ? <ul className="test-results-list">{results.map((result) => {
+        const elapsed = Number(result.elapsed_seconds);
+        const isBest = bestByDistance[result.distance]?.id === result.id;
+        return <li key={result.id}>
+          <div><strong>{result.distance} m</strong>{isBest && <span className="record-badge">Meilleur temps</span>}<small>{shortDate(result.created_at)}</small></div>
+          <div className="test-result-time"><strong>{formatTime(elapsed)}</strong><small>Allure {formatPace(elapsed, Number(result.distance))}</small></div>
+        </li>;
+      })}</ul> : <p className="empty-copy">Enregistre ton premier chrono : tes meilleurs temps apparaîtront ici.</p>}
+    </section>
+  </>;
+}
+
 export default function App() {
   const historyView = window.location.pathname.endsWith("/historique");
+  const testsPage = window.location.pathname.endsWith("/tests");
   const [user, setUser] = useState(null);
   const [authStatus, setAuthStatus] = useState("loading");
   const [authMode, setAuthMode] = useState("register");
   const [sessions, setSessions] = useState([]);
+  const [testResults, setTestResults] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -219,11 +283,16 @@ export default function App() {
     setSessions(rows.map(fromDatabase));
   }
 
+  async function loadTests() {
+    const rows = await requestApi("/tests");
+    setTestResults(rows);
+  }
+
   useEffect(() => {
     requestApi("/auth/me")
       .then(({ user: currentUser }) => {
         setUser(currentUser);
-        if (currentUser) return loadSessions();
+        if (currentUser) return Promise.all([loadSessions(), loadTests()]);
         return undefined;
       })
       .catch((error) => setMessage(error.message))
@@ -242,7 +311,7 @@ export default function App() {
       });
       setUser(authenticatedUser);
       setAuthStatus("ready");
-      await loadSessions();
+      await Promise.all([loadSessions(), loadTests()]);
       setMessage(authMode === "register" ? "Ton espace personnel est prêt." : "Tu es connecté.");
     } catch (error) {
       setMessage(error.message);
@@ -256,6 +325,7 @@ export default function App() {
       await requestApi("/auth/logout", { method: "POST" });
       setUser(null);
       setSessions([]);
+      setTestResults([]);
       setSelectedSession(null);
       setAuthMode("login");
       setMessage("");
@@ -295,10 +365,50 @@ export default function App() {
     }
   }
 
-  return <><BrandHeader history={historyView} user={user} onLogout={logout} /><main className="page-shell">
-    {message && <div className={`flash-stack ${message.includes("prête") || message.includes("enregistré") || message.includes("connecté") ? "success" : "error"}`} role="status"><p className={`flash ${message.includes("prête") || message.includes("enregistré") || message.includes("connecté") ? "success" : "error"}`}>{message}</p></div>}
+  async function deleteSession(sessionId) {
+    if (!window.confirm("Supprimer définitivement cette séance de ton historique ?")) return;
+    try {
+      await requestApi(`/sessions/${sessionId}`, { method: "DELETE" });
+      setSessions((current) => current.filter((session) => session.id !== sessionId));
+      setSelectedSession((current) => current?.id === sessionId ? null : current);
+      setMessage("Séance supprimée.");
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function saveTest(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const values = Object.fromEntries(new FormData(form));
+    const elapsedSeconds = Number(values.minutes) * 60 + Number(values.seconds);
+    if (!Number.isSafeInteger(elapsedSeconds) || elapsedSeconds < 1) {
+      setMessage("Le temps doit être supérieur à zéro.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await requestApi("/tests", {
+        method: "POST",
+        body: JSON.stringify({ distance: Number(values.distance), elapsedSeconds }),
+      });
+      await loadTests();
+      form.reset();
+      setMessage("Chrono ajouté à tes tests.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const isSuccessMessage = ["prête", "enregistré", "connecté", "supprimée", "Chrono ajouté"]
+    .some((phrase) => message.includes(phrase));
+
+  return <><BrandHeader history={historyView} testsPage={testsPage} user={user} onLogout={logout} /><main className="page-shell">
+    {message && <div className={`flash-stack ${isSuccessMessage ? "success" : "error"}`} role="status"><p className={`flash ${isSuccessMessage ? "success" : "error"}`}>{message}</p></div>}
     {authStatus === "loading" ? <p role="status">Chargement de ton espace…</p> : user
-      ? (historyView ? <History sessions={sessions} onSave={saveFeedback} /> : <Dashboard sessions={sessions} selectedSession={selectedSession} onGenerate={generate} busy={busy} />)
+      ? (historyView ? <History sessions={sessions} onSave={saveFeedback} onDelete={deleteSession} /> : testsPage ? <SwimTests results={testResults} onSave={saveTest} busy={busy} /> : <Dashboard sessions={sessions} selectedSession={selectedSession} onGenerate={generate} busy={busy} />)
       : <AuthScreen mode={authMode} onModeChange={setAuthMode} onSubmit={authenticate} busy={busy} />}
   </main><footer className="site-footer"><span>LIGNE D'EAU <b>·</b> CARNET PERSONNEL</span><span>Démo pédagogique : données fictives uniquement.</span><span>N’utilise pas d’informations sensibles ou de santé.</span></footer></>;
 }

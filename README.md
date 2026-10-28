@@ -20,6 +20,8 @@ Lors de la première visite, crée un compte avec une adresse e-mail et un mot d
 
 Dans l'historique, indique si la séance est terminée, partielle ou non réalisée, puis note le ressenti : très facile, facile, adaptée, difficile ou trop difficile. Une note facultative peut garder un commentaire d'entraînement.
 
+Chaque séance de l'historique peut être supprimée individuellement avec le bouton correspondant. Une confirmation est demandée avant l'effacement, qui est définitif et ne concerne que cette séance de ton compte.
+
 Pour une même combinaison de niveau, objectif, nage et longueur de bassin, les bilans de séances terminées peuvent modérer le volume proposé :
 
 - Séance difficile : volume réduit de 10 %
@@ -28,6 +30,10 @@ Pour une même combinaison de niveau, objectif, nage et longueur de bassin, les 
 - Sinon : volume standard
 
 Le programme explique les ajustements. Les séances partielles ou non réalisées ne déclenchent pas de progression.
+
+## Tests chronométrés
+
+Dans l'onglet « Tests », choisis un test de 50, 200 ou 400 m, puis saisis la durée en minutes et secondes. Le carnet conserve chaque résultat dans ton compte, calcule l'allure moyenne par 100 m et met en avant ton meilleur temps pour chacune des trois distances. Les temps sont des mesures saisies par le nageur; l'allure est une moyenne calculée à partir de la distance et du temps, pas une évaluation automatique du niveau.
 
 ## Comptes et confidentialité
 
@@ -56,3 +62,11 @@ Chaque modification fonctionnelle réalisée avec l'utilisateur doit être ajout
 - Ajout d'une migration de production exécutée une seule fois qui supprime l'ancien historique partagé et réinitialise les identifiants de séances. Les bases locales ne sont pas vidées; leurs anciennes séances non attribuées ne sont pas visibles dans les carnets.
 - Ajout d'un écran de connexion/création de compte, de l'affichage du compte connecté et de la déconnexion pour rendre l'accès personnel visible et utilisable; le chemin de base de l'application est transmis à l'image afin de limiter le cookie au bon chemin.
 - Documentation des étapes d'accès et de confidentialité, et tests des hachages, de l'inscription et de la protection de l'historique.
+
+### 2026-10-28 — Suppression des séances et tests chronométrés
+
+- Ajout d'une suppression individuelle depuis l'historique avec confirmation : cela permet de retirer une séance enregistrée par erreur sans effacer le reste du carnet.
+- Protection de la suppression par compte côté serveur : une personne ne peut supprimer que ses propres séances.
+- Ajout d'un espace Tests avec saisie des temps sur 50, 200 et 400 m : les résultats sont conservés dans le compte et l'allure moyenne par 100 m est calculée pour mieux suivre l'évolution.
+- Affichage de l'historique des chronos et des meilleurs temps par distance, sans prétendre fournir une évaluation automatique du niveau.
+- Ajout de tests serveur pour vérifier l'isolation des résultats, la validation des distances et la suppression limitée au propriétaire.

@@ -68,15 +68,26 @@ export async function migrate(database = pool) {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
-
-    const reset = await client.query(`
-      INSERT INTO app_migrations (name)
-      VALUES ('personal_accounts_and_history_reset')
-      ON CONFLICT DO NOTHING
-      RETURNING name
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS swim_tests (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL REFERENCES swim_users(id) ON DELETE CASCADE,
+        distance INTEGER NOT NULL CHECK (distance IN (50, 200, 400)),
+        elapsed_seconds INTEGER NOT NULL CHECK (elapsed_seconds > 0),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
     `);
-    if (reset.rowCount && process.env.NODE_ENV === "production") {
-      await client.query("TRUNCATE TABLE swim_sessions RESTART IDENTITY");
+
+    if (process.env.NODE_ENV === "production") {
+      const reset = await client.query(`
+        INSERT INTO app_migrations (name)
+        VALUES ('personal_accounts_and_history_reset')
+        ON CONFLICT DO NOTHING
+        RETURNING name
+      `);
+      if (reset.rowCount) {
+        await client.query("TRUNCATE TABLE swim_sessions RESTART IDENTITY");
+      }
     }
     const unassigned = await client.query(
       "SELECT COUNT(*) AS count FROM swim_sessions WHERE user_id IS NULL",
@@ -89,6 +100,10 @@ export async function migrate(database = pool) {
     await client.query(`
       CREATE INDEX IF NOT EXISTS swim_sessions_user_context_idx
       ON swim_sessions (user_id, level, goal, stroke, pool_length, created_at DESC)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS swim_tests_user_date_idx
+      ON swim_tests (user_id, created_at DESC)
     `);
     await client.query("COMMIT");
   } catch (error) {

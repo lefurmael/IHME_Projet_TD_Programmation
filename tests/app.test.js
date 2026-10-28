@@ -46,12 +46,14 @@ test("invalid session criteria are rejected without database writes", async () =
   });
 });
 
-test("session history is unavailable without an account session", async () => {
+test("private session and test routes are unavailable without an account session", async () => {
   const database = { query: async () => { throw new Error("No database query expected"); } };
   await withServer(database, async (baseUrl) => {
-    const response = await fetch(`${baseUrl}/api/sessions`);
-    assert.equal(response.status, 401);
-    assert.match((await response.json()).error, /Connecte-toi/);
+    for (const route of ["/api/sessions", "/api/tests"]) {
+      const response = await fetch(`${baseUrl}${route}`);
+      assert.equal(response.status, 401);
+      assert.match((await response.json()).error, /Connecte-toi/);
+    }
   });
 });
 
@@ -73,6 +75,87 @@ test("session history queries are scoped to the authenticated user", async () =>
     assert.deepEqual(await response.json(), []);
     assert.match(queries[1].sql, /WHERE user_id = \$1/);
     assert.deepEqual(queries[1].values, [27]);
+  });
+});
+
+test("a session can only be deleted from the authenticated user's history", async () => {
+  const queries = [];
+  const database = {
+    query: async (sql, values) => {
+      queries.push({ sql, values });
+      return queries.length === 1
+        ? { rows: [{ id: 27, email: "nageur@example.test" }] }
+        : { rows: [{ id: "91" }], rowCount: 1 };
+    },
+  };
+  await withServer(database, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/sessions/91`, {
+      method: "DELETE",
+      headers: { Cookie: "ligne_eau_session=valid-test-token" },
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { deleted: true });
+    assert.match(queries[1].sql, /WHERE id = \$1 AND user_id = \$2/);
+    assert.deepEqual(queries[1].values, ["91", 27]);
+  });
+});
+
+test("swim test history is scoped to the authenticated user", async () => {
+  const queries = [];
+  const database = {
+    query: async (sql, values) => {
+      queries.push({ sql, values });
+      return queries.length === 1
+        ? { rows: [{ id: 27, email: "nageur@example.test" }] }
+        : { rows: [{ id: "5", distance: 200, elapsed_seconds: 135 }] };
+    },
+  };
+  await withServer(database, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/tests`, {
+      headers: { Cookie: "ligne_eau_session=valid-test-token" },
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), [{ id: "5", distance: 200, elapsed_seconds: 135 }]);
+    assert.match(queries[1].sql, /FROM swim_tests WHERE user_id = \$1/);
+    assert.deepEqual(queries[1].values, [27]);
+  });
+});
+
+test("swim tests validate input and save the user's timed result", async () => {
+  let writeQuery = null;
+  const database = {
+    query: async (sql, values) => {
+      if (sql.includes("FROM auth_sessions")) {
+        return { rows: [{ id: 27, email: "nageur@example.test" }] };
+      }
+      writeQuery = { sql, values };
+      return { rows: [{ id: "6", user_id: 27, distance: 400, elapsed_seconds: 365 }] };
+    },
+  };
+  await withServer(database, async (baseUrl) => {
+    const invalid = await fetch(`${baseUrl}/api/tests`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: "ligne_eau_session=valid-test-token",
+      },
+      body: JSON.stringify({ distance: 100, elapsedSeconds: 100 }),
+    });
+    assert.equal(invalid.status, 400);
+    assert.equal(writeQuery, null);
+
+    const response = await fetch(`${baseUrl}/api/tests`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: "ligne_eau_session=valid-test-token",
+      },
+      body: JSON.stringify({ distance: 400, elapsedSeconds: 365 }),
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual(await response.json(), { id: "6", user_id: 27, distance: 400, elapsed_seconds: 365 });
+    assert.match(writeQuery.sql, /INSERT INTO swim_tests \(user_id, distance, elapsed_seconds\)/);
+    assert.deepEqual(writeQuery.values, [27, 400, 365]);
   });
 });
 
