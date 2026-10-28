@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#071d35">
-  <title>{% block title %}Carnet de nage{% endblock %} | Ligne d'eau</title>
+  <title>{% block title %}Carnet de nage{% endblock %} | Te noie pas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,9 +12,9 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="{{ url_for('dashboard') }}" aria-label="Ligne d'eau, accueil">
+    <a class="brand" href="{{ url_for('dashboard') }}" aria-label="Te noie pas, accueil">
       <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span><strong>LIGNE D'EAU</strong><small>CARNET DE NATATION</small></span>
+      <span><strong>TE NOIE PAS</strong><small>CARNET DE NATATION</small></span>
     </a>
     <nav class="main-nav" aria-label="Navigation principale">
       <a class="{% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Séance</a>
@@ -35,7 +35,7 @@
   </main>
 
   <footer class="site-footer">
-    <span>LIGNE D'EAU <b>·</b> CARNET PERSONNEL</span>
+    <span>TE NOIE PAS <b>·</b> CARNET PERSONNEL</span>
     <span>Les séances sont des propositions générales.</span>
   </footer>
 </body>

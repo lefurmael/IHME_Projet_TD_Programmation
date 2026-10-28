@@ -65,9 +65,9 @@ function formatPace(elapsedSeconds, distance) {
 function BrandHeader({ history, testsPage, user, onLogout }) {
   return (
     <header className="topbar">
-      <a className="brand" href={BASE_PATH} aria-label="Ligne d'eau, accueil">
+      <a className="brand" href={BASE_PATH} aria-label="Te noie pas, accueil">
         <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
-        <span><strong>LIGNE D'EAU</strong><small>CARNET DE NATATION</small></span>
+        <span><strong>TE NOIE PAS</strong><small>CARNET DE NATATION</small></span>
       </a>
       {user && <>
         <nav className="main-nav" aria-label="Navigation principale">
@@ -410,5 +410,5 @@ export default function App() {
     {authStatus === "loading" ? <p role="status">Chargement de ton espace…</p> : user
       ? (historyView ? <History sessions={sessions} onSave={saveFeedback} onDelete={deleteSession} /> : testsPage ? <SwimTests results={testResults} onSave={saveTest} busy={busy} /> : <Dashboard sessions={sessions} selectedSession={selectedSession} onGenerate={generate} busy={busy} />)
       : <AuthScreen mode={authMode} onModeChange={setAuthMode} onSubmit={authenticate} busy={busy} />}
-  </main><footer className="site-footer"><span>LIGNE D'EAU <b>·</b> CARNET PERSONNEL</span><span>Démo pédagogique : données fictives uniquement.</span><span>N’utilise pas d’informations sensibles ou de santé.</span></footer></>;
+  </main><footer className="site-footer"><span>TE NOIE PAS <b>·</b> CARNET PERSONNEL</span><span>Démo pédagogique : données fictives uniquement.</span><span>N’utilise pas d’informations sensibles ou de santé.</span></footer></>;
 }
